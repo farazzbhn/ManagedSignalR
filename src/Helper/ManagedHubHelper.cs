@@ -9,7 +9,7 @@ namespace ManagedLib.ManagedSignalR.Helper;
 /// Thread-safe helper class for managing SignalR connection lifecycle and message routing using concurrent collections. <br/><br/>
 /// <b>Core Components:</b> <br/><br/>
 /// 1. <b>Connection State Management:</b> <br/>
-///    - Implements <see cref="ConcurrentDictionary{TKey, TValue}"/> for thread-safe connection caching <br/>
+///    - Uses ICacheProvider for thread-safe connection caching <br/>
 ///    - Maps userId to <see cref="ManagedHubConnection{T}"/> containing multiple connectionIds <br/>
 ///    - Handles connection state mutations via atomic operations <br/><br/>
 /// 2. <b>Message Dispatch System:</b> <br/>
@@ -21,27 +21,24 @@ namespace ManagedLib.ManagedSignalR.Helper;
 ///    - Connection lifecycle hooks: <see cref="AddConnectionAsync"/>, <see cref="RemoveConnectionAsync"/> <br/>
 ///    - Message routing via <see cref="TryWhisper"/> with automatic connection fan-out <br/><br/>
 /// <b>Thread Safety:</b> <br/>
-/// All public methods are thread-safe. Connection state modifications use ConcurrentDictionary and ConcurrentBag 
-/// operations to ensure atomic updates in multi-threaded scenarios.
+/// All public methods are thread-safe. Connection state modifications use ICacheProvider operations 
+/// to ensure atomic updates in multi-threaded scenarios.
 /// </summary>
 /// <typeparam name="T">Hub type implementing <see cref="Hub{IClient}"/> for strongly-typed client invocations.</typeparam>
 public class ManagedHubHelper<T> where T : Hub<IClient>
 {
     protected readonly IHubContext<T, IClient> _hub;
-
     private readonly ManagedHubConfiguration _configuration;
     private readonly IIdentityResolver _idResolver;
-    private readonly ICacheProvider _cacheProvider;
-
     private readonly ILogger<ManagedHubHelper<T>> _logger;
-
+    private readonly ICacheProvider _cacheProvider;
 
     public ManagedHubHelper
     (
         IHubContext<T, IClient> hub,
         ManagedHubConfiguration configuration,
         IIdentityResolver idResolver,
-        ILogger<ManagedHubHelper<T>> logger, 
+        ILogger<ManagedHubHelper<T>> logger,
         ICacheProvider cacheProvider
     )
     {
@@ -52,50 +49,54 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         _cacheProvider = cacheProvider;
     }
 
-
     public bool TryGetConnection(string userId, out ManagedHubConnection<T>? connection)
     {
-        return ConnectionCache.TryGetValue(userId, out connection);
+        connection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+        return connection != null;
     }
-
 
     public async Task AddConnectionAsync(HubCallerContext context)
     {
-        string userId = await _idResolver.Identify(context);
+        string userId = await _idResolver.GetUserId(context);
 
-        // Using GetOrAdd simplifies logic for adding or retrieving connections
-        var hubConnection = ConnectionCache.GetOrAdd(userId, _ => new ManagedHubConnection<T>
+        var existingConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+        if (existingConnection == null)
         {
-            UserId = userId,
-            ConnectionIds = new ConcurrentBag<string>()
-        });
+            existingConnection = new ManagedHubConnection<T>
+            {
+                UserId = userId,
+                ConnectionIds = new ConcurrentBag<string>()
+            };
+        }
 
         // Add the new connection ID safely
-        hubConnection.ConnectionIds.Add(context.ConnectionId);
-
+        existingConnection.ConnectionIds.Add(context.ConnectionId);
+        _cacheProvider.Set(userId, existingConnection);
     }
 
     public async Task RemoveConnectionAsync(HubCallerContext context)
     {
-        string userId = await _idResolver.Identify(context);
+        string userId = await _idResolver.GetUserId(context);
 
         var connectionId = context.ConnectionId;
-        if (TryGetConnection(userId, out var hubConnection))
+        var hubConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+        
+        if (hubConnection != null)
         {
-            if (hubConnection!.ConnectionIds.Count > 1)
+            if (hubConnection.ConnectionIds.Count > 1)
             {
-                // RemoveById connection ID safely
+                // Remove connection ID safely
                 hubConnection.ConnectionIds.TryTake(out var removedId);
                 if (removedId != null)
                 {
                     // Update the cache
-                    ConnectionCache[userId] = hubConnection;
+                    _cacheProvider.Set(userId, hubConnection);
                 }
             }
             else
             {
                 // No other connections, remove from cache
-                ConnectionCache.TryRemove(userId, out _);
+                _cacheProvider.Remove(userId);
             }
         }
         else
@@ -103,7 +104,6 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
             // WTH ?!
         }
     }
-
 
     /// <summary>
     /// 1. Finds the topic associated with the <paramref name="msg"/> ; ( registered at startup )<br />
@@ -118,9 +118,10 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     {
         try
         {
-            if (TryGetConnection(userId, out var hubConnection))
+            var hubConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+            if (hubConnection != null)
             {
-                var connectionIds = hubConnection!.ConnectionIds;
+                var connectionIds = hubConnection.ConnectionIds;
 
                 EventMapping binding = _configuration.GetMapping(typeof(T));
                 string topic = binding.Outgoing.Single(x => x.Key == msg.GetType()).Value;

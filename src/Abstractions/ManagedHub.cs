@@ -10,8 +10,8 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 /// <b>How to use:</b> <br/><br/>
 /// 1. <b>Connection Management:</b> <br/>
 ///    - Inherit from this class to automatically handle client connections and disconnections <br/>
-///    - Override <see cref="PostConnectedAsync"/> to run custom logic when clients connect (e.g., user authentication) <br/>
-///    - Override <see cref="PostDisconnectedAsync"/> to clean up resources when clients disconnect <br/><br/>
+///    - Override <see cref="OnConnectedHookAsync"/> to run custom logic when clients connect <br/>
+///    - Override <see cref="OnDisconnectedHookAsync"/> to clean up resources when clients disconnect <br/><br/>
 /// 2. <b>Message Handling:</b> <br/>
 ///    - Clients send messages using the <b><see cref="Process"/></b> method with a topic and JSON payload <br/>
 ///    - Messages are <b>automatically deserialized</b> based on your topic configuration <br/>
@@ -25,9 +25,9 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 /// <typeparam name="T">Your hub class that inherits from this base class.</typeparam>
 public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 {
-    protected readonly ICommandBus _commandBus;
     protected readonly ILogger<ManagedHub<T>> _logger;
     protected readonly ManagedHubHelper<T> _hubHelper;
+    private readonly ICommandBus _commandBus;
     private readonly ManagedHubConfiguration _configuration;
 
     /// <summary>
@@ -56,14 +56,14 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     {
         _logger.LogInformation($"[{typeof(T)}] [connected] {Context.ConnectionId}");
         await _hubHelper.AddConnectionAsync(Context);
-        await PostConnectedAsync();
+        await OnConnectedHookAsync();
     }
 
 
     /// <summary>
     /// Contains operations to be executed after a connection is established. Can be overridden by derived classes.<br />
     /// </summary>
-    protected virtual Task PostConnectedAsync() { return Task.CompletedTask; }
+    protected virtual Task OnConnectedHookAsync() { return Task.CompletedTask; }
 
     /// <summary>
     /// Called when a connection with the hub is disconnected.<br />
@@ -76,7 +76,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
         _logger.LogInformation($"[{typeof(T)}] [disconnected] {Context.ConnectionId}");
         await _hubHelper.RemoveConnectionAsync(Context);
 
-        await PostDisconnectedAsync();
+        await OnDisconnectedHookAsync();
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -84,7 +84,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// <summary>
     /// Contains operations to be executed after a disconnection occurs. Can be overridden by derived classes.
     /// </summary>
-    protected virtual Task PostDisconnectedAsync() { return Task.CompletedTask; }
+    protected virtual Task OnDisconnectedHookAsync() { return Task.CompletedTask; }
 
 
     /// <summary>
@@ -112,18 +112,6 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 
         // send the deserialized body to the handled
         await _commandBus.HandleAsync(deserializedBody);
-    }
-
-
-    /// <summary>
-    /// Retrieves the <see cref="ManagedHubConnection{T}"/> associated with the current connection.
-    /// This is indeed associated with a user 
-    /// </summary>
-    /// <returns></returns>
-    public async Task<ManagedHubConnection<T>> GetCurrentConnection()
-    {
-        ManagedHubConnection<T> connection = await _hubHelper.FetchConnection(Context);
-        return connection;
     }
 
 }

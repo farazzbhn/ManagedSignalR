@@ -21,5 +21,5 @@ public interface IIdentityResolver
     /// </remarks>
     /// <param name="context">The hub connection context containing user authentication and connection details.</param>
     /// <returns>A unique identifier string for the connected user.</returns>
-    Task<string> Identify(HubCallerContext context);
+    Task<string> GetUserId(HubCallerContext context);
 }
