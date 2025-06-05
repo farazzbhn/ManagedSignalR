@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace ManagedLib.ManagedSignalR.Exceptions
 {
-    public class InvalidMappingConfigurationException : Exception
+    public class HandlerNotFoundException : Exception
     {
-        public InvalidMappingConfigurationException(Type type) : base($"Invalid mapping configuration for {type}.")
+        public HandlerNotFoundException(Type messageType) : base($"Handler not registered for incoming message type {messageType}.")
         {
         }
     }

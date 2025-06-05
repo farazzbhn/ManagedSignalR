@@ -1,7 +1,6 @@
-﻿using ManagedLib.ManagedSignalR.Helper;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace ManagedLib.ManagedSignalR;
+namespace ManagedLib.ManagedSignalR.Configuration;
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection ConfigureManagedHubs
@@ -10,10 +9,8 @@ public static class ServiceCollectionExtensions
         Action<ManagedHubConfiguration> configurer
     )
     {
-
         ManagedHubConfiguration configuration = new();
         configurer.Invoke(configuration);
-
 
         // register the configuration as singleton
         services.AddSingleton(configuration);
@@ -24,10 +21,8 @@ public static class ServiceCollectionExtensions
         });
 
         // open generic
-        services.AddTransient(typeof(ManagedHubHelper<>));
+        services.AddScoped(typeof(ManagedHubHelper<>));
 
         return services;
     }
-
-
 }

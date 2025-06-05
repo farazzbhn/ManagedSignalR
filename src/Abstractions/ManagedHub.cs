@@ -1,4 +1,4 @@
-﻿using ManagedLib.ManagedSignalR.Helper;
+﻿using ManagedLib.ManagedSignalR.Configuration;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -13,7 +13,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 ///    - Override <see cref="OnConnectedHookAsync"/> to run custom logic when clients connect <br/>
 ///    - Override <see cref="OnDisconnectedHookAsync"/> to clean up resources when clients disconnect <br/><br/>
 /// 2. <b>Message Handling:</b> <br/>
-///    - Clients send messages using the <b><see cref="Process"/></b> method with a topic and JSON payload <br/>
+///    - Clients send messages using the <b><see cref="Submit"/></b> method with a topic and JSON payload <br/>
 ///    - Messages are <b>automatically deserialized</b> based on your topic configuration <br/>
 ///    - No need to write manual message parsing - just configure your topic-to-command mappings <br/><br/>
 /// 3. <b>Command Processing:</b> <br/>
@@ -27,7 +27,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 {
     protected readonly ILogger<ManagedHub<T>> _logger;
     protected readonly ManagedHubHelper<T> _hubHelper;
-    private readonly ICommandBus _commandBus;
+    private readonly HandlerBus postBus;
     private readonly ManagedHubConfiguration _configuration;
 
     /// <summary>
@@ -35,13 +35,13 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// </summary>
     public ManagedHub
     (
-        ICommandBus commandBus,
+        HandlerBus postBus,
         ILogger<ManagedHub<T>> logger,
         ManagedHubHelper<T> hubHelper,
         ManagedHubConfiguration configuration
     )
     {
-        _commandBus = commandBus;
+        this.postBus = postBus;
         _logger = logger;
         _hubHelper = hubHelper;
         _configuration = configuration;
@@ -88,14 +88,13 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 
 
     /// <summary>
-    /// Processes an incoming message by deserializing it and dispatching it via <see cref="ICommandBus"/> in a fire-and-forget manner. <br/>
+    /// Processes an incoming message by deserializing it and dispatching it via <see cref="HandlerBus"/> in a fire-and-forget manner. <br/>
     /// Deserialization is driven by the configured topic-to-command mappings in <see cref="ManagedHubConfiguration"/>. <br/><br/>
     /// If overridden, the derived hub must manually handle deserialization and command dispatching.
     /// </summary>
     /// <param name="topic">The topic name identifying the command type to be dispatched.</param>
-    /// <param name="body">The serialized JSON payload sent from the client.</param>
-
-    public async Task Process(string topic, string body)
+    /// <param name="message">The serialized JSON payload sent from the client.</param>
+    public async Task Submit(string topic, string message)
     {
         // Determine the target type based on the topic
         EventMapping binding = _configuration.GetMapping(typeof(T));
@@ -108,10 +107,10 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
             PropertyNameCaseInsensitive = true
         };
 
-        dynamic deserializedBody = JsonSerializer.Deserialize(body, targetType, options)!;
+        dynamic deserializedBody = JsonSerializer.Deserialize(message, targetType, options)!;
 
         // send the deserialized body to the handled
-        await _commandBus.HandleAsync(deserializedBody);
+        await postBus.HandleAsync(deserializedBody);
     }
 
 }

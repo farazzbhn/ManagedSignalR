@@ -1,7 +1,7 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Exceptions;
 
-namespace ManagedLib.ManagedSignalR;
+namespace ManagedLib.ManagedSignalR.Configuration;
 public class ManagedHubConfiguration
 {
     private List<EventMapping> Mappings { get; } = new();
@@ -26,7 +26,7 @@ public class ManagedHubConfiguration
         EventMapping? result = Mappings.SingleOrDefault(x => x.Hub == type);
         if (result == null)
         {
-            throw new InvalidMappingConfigurationException(type);
+            throw new FailedToMapTypeException(type);
         }
         return result;
     }

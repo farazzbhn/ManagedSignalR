@@ -1,18 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedLib.ManagedSignalR.Helper;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Thread-safe in-memory implementation of ICacheProvider using ConcurrentDictionary.
+/// Thread-safe in-memory implementation of <see cref="ICacheProvider"/> using ConcurrentDictionary.
 /// This is the default implementation suitable for single-server scenarios.
-/// For distributed systems, consider implementing a distributed cache provider.
+/// For distributed systems, consider implementing a distributed cache provider and mind the uniqueness of the key
 /// </summary>
 public class InMemoryCacheProvider : ICacheProvider
 {

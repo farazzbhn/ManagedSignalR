@@ -1,33 +1,38 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+﻿using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Configuration;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 
-namespace ManagedLib.ManagedSignalR.Helper;
+namespace ManagedLib.ManagedSignalR;
 
 /// <summary>
 /// Thread-safe helper class for managing SignalR connection lifecycle and message routing using concurrent collections. <br/><br/>
 /// <b>Core Components:</b> <br/><br/>
 /// 1. <b>Connection State Management:</b> <br/>
-///    - Uses ICacheProvider for thread-safe connection caching <br/>
+///    - Uses <see cref="ICacheProvider"/> for thread-safe connection caching <br/>
 ///    - Maps userId to <see cref="ManagedHubConnection{T}"/> containing multiple connectionIds <br/>
 ///    - Handles connection state mutations via atomic operations <br/><br/>
 /// 2. <b>Message Dispatch System:</b> <br/>
 ///    - Utilizes <see cref="IHubContext{THub, T}"/> for client communication <br/>
-///    - Implements topic-based message routing via <see cref="EventMapping"/> configuration <br/>
+///    - Implements topic-based message routing via <see cref="IIdentityResolver"/> configuration <br/>
 ///    - Supports payload serialization and type-safe message dispatch <br/><br/>
 /// 3. <b>Implementation Details:</b> <br/>
-///    - Async user identification via <see cref="IIdentityResolver"/> <br/>
-///    - Connection lifecycle hooks: <see cref="AddConnectionAsync"/>, <see cref="RemoveConnectionAsync"/> <br/>
-///    - Message routing via <see cref="TryWhisper"/> with automatic connection fan-out <br/><br/>
+///    - Async user identification via <see cref="TryPush"/> <br/>
+///    - Message routing via <see cref="AddConnectionAsync"/> with automatic connection fan-out <br/><br/>
+///    - Connection lifecycle hooks:<br />
+///      a) <see cref="RemoveConnectionAsync"/> <br />
+///      b) <see cref="ICacheProvider"/> <br/><br/>
 /// <b>Thread Safety:</b> <br/>
-/// All public methods are thread-safe. Connection state modifications use ICacheProvider operations 
+/// All public methods are thread-safe. <br />
+/// Connection state modifications use <see cref="ICacheProvider"/> operations 
 /// to ensure atomic updates in multi-threaded scenarios.
 /// </summary>
-/// <typeparam name="T">Hub type implementing <see cref="Hub{IClient}"/> for strongly-typed client invocations.</typeparam>
+/// <typeparam name="T">Hub type implementing <see cref="EventMapping"/> for strongly-typed client invocations.</typeparam>
 public class ManagedHubHelper<T> where T : Hub<IClient>
 {
     protected readonly IHubContext<T, IClient> _hub;
+
     private readonly ManagedHubConfiguration _configuration;
     private readonly IIdentityResolver _idResolver;
     private readonly ILogger<ManagedHubHelper<T>> _logger;
@@ -49,13 +54,8 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         _cacheProvider = cacheProvider;
     }
 
-    public bool TryGetConnection(string userId, out ManagedHubConnection<T>? connection)
-    {
-        connection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
-        return connection != null;
-    }
 
-    public async Task AddConnectionAsync(HubCallerContext context)
+    internal async Task AddConnectionAsync(HubCallerContext context)
     {
         string userId = await _idResolver.GetUserId(context);
 
@@ -65,7 +65,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
             existingConnection = new ManagedHubConnection<T>
             {
                 UserId = userId,
-                ConnectionIds = new ConcurrentBag<string>()
+                ConnectionIds = new List<string>()
             };
         }
 
@@ -74,24 +74,22 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         _cacheProvider.Set(userId, existingConnection);
     }
 
-    public async Task RemoveConnectionAsync(HubCallerContext context)
+    internal async Task RemoveConnectionAsync(HubCallerContext context)
     {
+        // find the user id associate with the context
         string userId = await _idResolver.GetUserId(context);
 
-        var connectionId = context.ConnectionId;
+        // and connection Id
+        string connectionId = context.ConnectionId;
+
         var hubConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
         
         if (hubConnection != null)
         {
             if (hubConnection.ConnectionIds.Count > 1)
             {
-                // Remove connection ID safely
-                hubConnection.ConnectionIds.TryTake(out var removedId);
-                if (removedId != null)
-                {
-                    // Update the cache
-                    _cacheProvider.Set(userId, hubConnection);
-                }
+                // Remove connection ID 
+                hubConnection.ConnectionIds.Remove(connectionId);
             }
             else
             {
@@ -99,22 +97,22 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
                 _cacheProvider.Remove(userId);
             }
         }
-        else
+        else // object reference not expired
         {
-            // WTH ?!
+            _logger.LogWarning($"{_cacheProvider.GetType()} Failed to find the cache, is it expired?");
         }
     }
 
     /// <summary>
     /// 1. Finds the topic associated with the <paramref name="msg"/> ; ( registered at startup )<br />
-    /// 2. Invokes the <see cref="TopicMessage."/><br />
+    /// 2. Invokes the <see cref="IPushNotiIPushNotification.ToPayload
     /// 3. Retrieves from within the cache provider, the list of connection ids associated with <paramref name="userId"></paramref> <br />
-    /// 4. Invokes the client-side method <see cref="IClient.Whisper"/> using the two parameters for each connection Id<br />
+    /// 4. Invokes the client-side method <see cref="IClient.Push"/> using the two parameters for each connection Id<br />
     /// </summary>
     /// <param name="userId"></param>
     /// <param name="msg"></param>
     /// <returns></returns>
-    public async Task<bool> TryWhisper(string userId, TopicMessage msg)
+    public async Task<bool> TryPush(string userId, IPushNotification msg)
     {
         try
         {
@@ -125,34 +123,26 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
 
                 EventMapping binding = _configuration.GetMapping(typeof(T));
                 string topic = binding.Outgoing.Single(x => x.Key == msg.GetType()).Value;
-                string body = msg.ToText();
+                string payload = msg.ToPayload();
                 // Send to each connection
                 foreach (var id in connectionIds)
                 {
-                    await _hub.Clients.Client(id).Whisper(topic, body);
+                    await _hub.Clients.Client(id).Push(topic, payload);
                 }
                 return true;
             }
             else
             {
                 // userId may have disconnected 
-                _logger.LogError($"[{GetType()}] Whisper failed : User {userId} has no active connections");
+                _logger.LogError($"[{GetType()}] Push failed : User {userId} has no active connections");
                 return false;
             }
         }
         catch (Exception e)
         {
-            _logger.LogError($"[{GetType()}] Whisper failed : {e}");
+            _logger.LogError($"[{GetType()}] Push failed : {e}");
             return false;
         }
     }
 }
 
-/// <summary>
-/// Represents a userId-specific SignalR hub connection, including a collection of active connection IDs.
-/// </summary>
-public class ManagedHubConnection<T>
-{
-    public string UserId { get; set; } = default!;
-    public ConcurrentBag<string> ConnectionIds { get; set; } = new();
-}

@@ -1,5 +1,4 @@
-﻿using System;
-namespace ManagedLib.ManagedSignalR.Abstractions;
+﻿namespace ManagedLib.ManagedSignalR.Abstractions;
 
 public interface ICacheProvider
 {
