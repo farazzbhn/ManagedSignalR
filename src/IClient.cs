@@ -18,6 +18,6 @@ namespace ManagedLib.ManagedSignalR
         /// <param name="topic"></param>
         /// <param name="payload"></param>
         /// <returns></returns>
-        Task Submit(string topic, string payload);
+        Task Process(string topic, string payload);
     }
 }

@@ -13,7 +13,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 ///    - Override <see cref="OnConnectedHookAsync"/> to run custom logic when clients connect <br/>
 ///    - Override <see cref="OnDisconnectedHookAsync"/> to clean up resources when clients disconnect <br/><br/>
 /// 2. <b>Message Handling:</b> <br/>
-///    - Clients send messages using the <b><see cref="Submit"/></b> method with a topic and JSON payload <br/>
+///    - Clients send messages using the <b><see cref="Process"/></b> method with a topic and JSON payload <br/>
 ///    - Messages are <b>automatically deserialized</b> based on your topic configuration <br/>
 ///    - No need to write manual message parsing - just configure your topic-to-command mappings <br/><br/>
 /// 3. <b>Command Processing:</b> <br/>
@@ -27,7 +27,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 {
     protected readonly ILogger<ManagedHub<T>> _logger;
     protected readonly ManagedHubHelper<T> _hubHelper;
-    private readonly HandlerBus postBus;
+    private readonly HandlerBus _handlerBus;
     private readonly ManagedHubConfiguration _configuration;
 
     /// <summary>
@@ -35,13 +35,13 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// </summary>
     public ManagedHub
     (
-        HandlerBus postBus,
+        HandlerBus handlerBus,
         ILogger<ManagedHub<T>> logger,
         ManagedHubHelper<T> hubHelper,
         ManagedHubConfiguration configuration
     )
     {
-        this.postBus = postBus;
+        _handlerBus = handlerBus;
         _logger = logger;
         _hubHelper = hubHelper;
         _configuration = configuration;
@@ -63,7 +63,9 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// <summary>
     /// Contains operations to be executed after a connection is established. Can be overridden by derived classes.<br />
     /// </summary>
-    protected virtual Task OnConnectedHookAsync() { return Task.CompletedTask; }
+    protected virtual Task OnConnectedHookAsync() => Task.CompletedTask; 
+
+
 
     /// <summary>
     /// Called when a connection with the hub is disconnected.<br />
@@ -84,33 +86,31 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// <summary>
     /// Contains operations to be executed after a disconnection occurs. Can be overridden by derived classes.
     /// </summary>
-    protected virtual Task OnDisconnectedHookAsync() { return Task.CompletedTask; }
+    protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
+
 
 
     /// <summary>
-    /// Processes an incoming message by deserializing it and dispatching it via <see cref="HandlerBus"/> in a fire-and-forget manner. <br/>
+    /// Processes an incoming message by deserializing it and routing it to the appropriate
+    /// <see cref="IHandler{TCommand}"/> in a <b>fire &amp; forget </b> manner. <br/>
     /// Deserialization is driven by the configured topic-to-command mappings in <see cref="ManagedHubConfiguration"/>. <br/><br/>
-    /// If overridden, the derived hub must manually handle deserialization and command dispatching.
+    /// If overridden, the derived hub must manually handle deserialization and command handling.
     /// </summary>
     /// <param name="topic">The topic name identifying the command type to be dispatched.</param>
     /// <param name="message">The serialized JSON payload sent from the client.</param>
-    public async Task Submit(string topic, string message)
+    public async Task Process(string topic, string message)
     {
-        // Determine the target type based on the topic
-        EventMapping binding = _configuration.GetMapping(typeof(T));
+        EventBinding? binding = _configuration.GetEventBinding(typeof(T));
 
-        Type targetType = binding.Incoming.Single(x => x.Value == topic).Key;
 
-        // Deserialize the body into an object of the target type
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        if (binding is null || !binding.Inbound.TryGetValue(topic, out var config))
+            throw new InvalidOperationException($"No handler configured for topic {topic}");
 
-        dynamic deserializedBody = JsonSerializer.Deserialize(message, targetType, options)!;
+        // Deserialize using configured deserializer
+        object deserializedMessage = config.Deserializer(message);
 
-        // send the deserialized body to the handled
-        await postBus.HandleAsync(deserializedBody);
+        // Dispatch to handler
+        await _handlerBus.HandleAsync(deserializedMessage);
     }
 
 }

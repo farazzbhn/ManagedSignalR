@@ -1,34 +1,47 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
+
 public class ManagedHubConfiguration
 {
-    private List<EventMapping> Mappings { get; } = new();
+    internal readonly List<EventBinding> Bindings;
 
-    public EventMapping AddHub<T>() where T : ManagedHub<T>
+    private readonly IServiceCollection _services;
+
+    public ManagedHubConfiguration
+    (
+        IServiceCollection services
+    )
     {
-        // Find the EventMapping for the specified hub type, if it exists
-        var mapping = Mappings.FirstOrDefault(m => m.Hub == typeof(T));
+        Bindings = new List<EventBinding>();
+        _services = services;
+    }
 
-        // If the mapping doesn't exist, create a new EventMapping
-        if (mapping == null)
+
+    /// <summary>
+    /// Configures a hub with its event mappings
+    /// </summary>
+    /// <typeparam name="THub">The hub type that inherits from ManagedHub</typeparam>
+    /// <returns>An EventMapping instance for fluent configuration</returns>
+    public EventBinding AddHub<THub>() where THub : ManagedHub<THub>
+    {
+        // Find or create mapping for the hub
+        var binding = Bindings.FirstOrDefault(m => m.HubType == typeof(THub));
+
+        if (binding == null)
         {
-            mapping = new EventMapping(typeof(T));
-            Mappings.Add(mapping);
+            binding = new EventBinding(typeof(THub), _services);
+            Bindings.Add(binding);
         }
+
+        return binding;
+    }
+
+    internal EventBinding? GetEventBinding(Type hubType)
+    {
+        var mapping = Bindings.SingleOrDefault(x => x.HubType == hubType);
         return mapping;
     }
-
-
-    public EventMapping GetMapping(Type type)
-    {
-        EventMapping? result = Mappings.SingleOrDefault(x => x.Hub == type);
-        if (result == null)
-        {
-            throw new FailedToMapTypeException(type);
-        }
-        return result;
-    }
-
 }

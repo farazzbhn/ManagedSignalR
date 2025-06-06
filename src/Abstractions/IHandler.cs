@@ -12,5 +12,5 @@ public interface IHandler<in TCommand>
     /// </summary>
     /// <param name="request">The command instance.</param>
     /// <returns>A task representing the asynchronous operation</returns>
-    Task SubmitAsync(TCommand request);
+    Task ProcessAsync(TCommand request);
 }

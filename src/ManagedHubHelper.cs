@@ -28,7 +28,7 @@ namespace ManagedLib.ManagedSignalR;
 /// Connection state modifications use <see cref="ICacheProvider"/> operations 
 /// to ensure atomic updates in multi-threaded scenarios.
 /// </summary>
-/// <typeparam name="T">Hub type implementing <see cref="EventMapping"/> for strongly-typed client invocations.</typeparam>
+/// <typeparam name="T">Hub type implementing <see cref="EventBinding"/> for strongly-typed client invocations.</typeparam>
 public class ManagedHubHelper<T> where T : Hub<IClient>
 {
     protected readonly IHubContext<T, IClient> _hub;
@@ -104,15 +104,13 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     }
 
     /// <summary>
-    /// 1. Finds the topic associated with the <paramref name="msg"/> ; ( registered at startup )<br />
-    /// 2. Invokes the <see cref="IPushNotiIPushNotification.ToPayload
-    /// 3. Retrieves from within the cache provider, the list of connection ids associated with <paramref name="userId"></paramref> <br />
-    /// 4. Invokes the client-side method <see cref="IClient.Push"/> using the two parameters for each connection Id<br />
+    /// Pushes a message to all connections of a specific user.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="msg"></param>
-    /// <returns></returns>
-    public async Task<bool> TryPush(string userId, IPushNotification msg)
+    /// <typeparam name="TMessage">The type of message to push</typeparam>
+    /// <param name="userId">The user ID to push the message to</param>
+    /// <param name="message">The message to push</param>
+    /// <returns>True if the message was pushed successfully, false otherwise</returns>
+    public async Task<bool> TryPush<TMessage>(string userId, TMessage message)
     {
         try
         {
@@ -120,14 +118,20 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
             if (hubConnection != null)
             {
                 var connectionIds = hubConnection.ConnectionIds;
+                EventBinding? binding = _configuration.GetEventBinding(typeof(T));
 
-                EventMapping binding = _configuration.GetMapping(typeof(T));
-                string topic = binding.Outgoing.Single(x => x.Key == msg.GetType()).Value;
-                string payload = msg.ToPayload();
+                if (binding is null || !binding.Outbound.TryGetValue(typeof(TMessage), out var config))
+                {
+                    _logger.LogError($"[{GetType()}] Push failed: No configuration found for message type {typeof(TMessage)}");
+                    return false;
+                }
+
+                string serializedMessage = config.Serializer(message!);
+
                 // Send to each connection
                 foreach (var id in connectionIds)
                 {
-                    await _hub.Clients.Client(id).Push(topic, payload);
+                    await _hub.Clients.Client(id).Push(config.Topic, serializedMessage);
                 }
                 return true;
             }
