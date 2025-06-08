@@ -10,6 +10,7 @@ namespace ManagedLib.ManagedSignalR.Exceptions
     {
         public HandlerNotFoundException(Type messageType) : base($"Handler not registered for incoming message type {messageType}.")
         {
+
         }
     }
 }

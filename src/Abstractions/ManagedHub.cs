@@ -1,7 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Configuration;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
@@ -28,7 +27,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     protected readonly ILogger<ManagedHub<T>> _logger;
     protected readonly ManagedHubHelper<T> _hubHelper;
     private readonly HandlerBus _handlerBus;
-    private readonly ManagedHubConfiguration _configuration;
+    private readonly ManagedSignalRConfig _configuration;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedHub{T}"/> class.
@@ -38,7 +37,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
         HandlerBus handlerBus,
         ILogger<ManagedHub<T>> logger,
         ManagedHubHelper<T> hubHelper,
-        ManagedHubConfiguration configuration
+        ManagedSignalRConfig configuration
     )
     {
         _handlerBus = handlerBus;
@@ -92,16 +91,15 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 
     /// <summary>
     /// Processes an incoming message by deserializing it and routing it to the appropriate
-    /// <see cref="IHandler{TCommand}"/> in a <b>fire &amp; forget </b> manner. <br/>
-    /// Deserialization is driven by the configured topic-to-command mappings in <see cref="ManagedHubConfiguration"/>. <br/><br/>
+    /// <see cref="IManagedHubHandler{TCommand}"/> in a <b>fire &amp; forget </b> manner. <br/>
+    /// Deserialization is driven by the configured topic-to-command mappings in <see cref="ManagedSignalRConfig"/>. <br/><br/>
     /// If overridden, the derived hub must manually handle deserialization and command handling.
     /// </summary>
     /// <param name="topic">The topic name identifying the command type to be dispatched.</param>
     /// <param name="message">The serialized JSON payload sent from the client.</param>
-    public async Task Process(string topic, string message)
+    public async Task NotifyServer(string topic, string message)
     {
-        EventBinding? binding = _configuration.GetEventBinding(typeof(T));
-
+        ManagedHubConfig? binding = _configuration.GetConfig(typeof(T));
 
         if (binding is null || !binding.Inbound.TryGetValue(topic, out var config))
             throw new InvalidOperationException($"No handler configured for topic {topic}");
@@ -110,7 +108,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
         object deserializedMessage = config.Deserializer(message);
 
         // Dispatch to handler
-        await _handlerBus.HandleAsync(deserializedMessage);
+        await _handlerBus.Handle(deserializedMessage);
     }
 
 }

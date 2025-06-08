@@ -17,10 +17,10 @@ public sealed class HandlerBus
     /// that can process the specified command, returning the handler's response.
     /// </summary>
     /// <param name="command">The post command instance to handle.</param>
-    public async Task HandleAsync(dynamic command)
+    public async Task Handle(dynamic command)
     {
         // Determine the type (e.g., IPostHandler<Location>
-        Type handlerType = typeof(IHandler<>).MakeGenericType(command.GetType());
+        Type handlerType = typeof(IManagedHubHandler<>).MakeGenericType(command.GetType());
         
         // inject the list of registered handlers e.g., ICommandHandler<Request, Response>
         var handlers = (IEnumerable<object>)_serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(handlerType));
@@ -29,7 +29,7 @@ public sealed class HandlerBus
 
         foreach (var handler in handlers)
         {
-            var handleAsyncMethod = handlerType.GetMethod("SubmitAsync");
+            var handleAsyncMethod = handlerType.GetMethod("Handle");
 
             try
             {

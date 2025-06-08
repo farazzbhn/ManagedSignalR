@@ -11,14 +11,14 @@ namespace ManagedLib.ManagedSignalR;
 /// <b>Core Components:</b> <br/><br/>
 /// 1. <b>Connection State Management:</b> <br/>
 ///    - Uses <see cref="ICacheProvider"/> for thread-safe connection caching <br/>
-///    - Maps userId to <see cref="ManagedHubConnection{T}"/> containing multiple connectionIds <br/>
+///    - Maps userId to <see cref="ManagedHubSession{T}"/> containing multiple connectionIds <br/>
 ///    - Handles connection state mutations via atomic operations <br/><br/>
 /// 2. <b>Message Dispatch System:</b> <br/>
 ///    - Utilizes <see cref="IHubContext{THub, T}"/> for client communication <br/>
 ///    - Implements topic-based message routing via <see cref="IIdentityResolver"/> configuration <br/>
 ///    - Supports payload serialization and type-safe message dispatch <br/><br/>
 /// 3. <b>Implementation Details:</b> <br/>
-///    - Async user identification via <see cref="TryPush"/> <br/>
+///    - Async user identification via <see cref="TryPush{TMessage}"/> <br/>
 ///    - Message routing via <see cref="AddConnectionAsync"/> with automatic connection fan-out <br/><br/>
 ///    - Connection lifecycle hooks:<br />
 ///      a) <see cref="RemoveConnectionAsync"/> <br />
@@ -33,25 +33,26 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
 {
     protected readonly IHubContext<T, IClient> _hub;
 
-    private readonly ManagedHubConfiguration _configuration;
+    private readonly ManagedSignalRConfig _configuration;
     private readonly IIdentityResolver _idResolver;
     private readonly ILogger<ManagedHubHelper<T>> _logger;
-    private readonly ICacheProvider _cacheProvider;
+    private readonly Func<ICacheProvider> _cacheProviderFactory;
+
 
     public ManagedHubHelper
     (
         IHubContext<T, IClient> hub,
-        ManagedHubConfiguration configuration,
+        ManagedSignalRConfig configuration,
         IIdentityResolver idResolver,
         ILogger<ManagedHubHelper<T>> logger,
-        ICacheProvider cacheProvider
+        Func<ICacheProvider> cacheProviderFactory
     )
     {
         _hub = hub;
         _configuration = configuration;
         _idResolver = idResolver;
         _logger = logger;
-        _cacheProvider = cacheProvider;
+        _cacheProviderFactory = cacheProviderFactory;
     }
 
 
@@ -59,10 +60,10 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     {
         string userId = await _idResolver.GetUserId(context);
 
-        var existingConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
-        if (existingConnection == null)
+        var session = _cacheProviderFactory().Get<ManagedHubSession<T>>(userId);
+        if (session == null)
         {
-            existingConnection = new ManagedHubConnection<T>
+            session = new ManagedHubSession<T>
             {
                 UserId = userId,
                 ConnectionIds = new List<string>()
@@ -70,8 +71,8 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         }
 
         // Add the new connection ID safely
-        existingConnection.ConnectionIds.Add(context.ConnectionId);
-        _cacheProvider.Set(userId, existingConnection);
+        session.ConnectionIds.Add(context.ConnectionId);
+        _cacheProviderFactory().Set(userId, session);
     }
 
     internal async Task RemoveConnectionAsync(HubCallerContext context)
@@ -82,24 +83,24 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         // and connection Id
         string connectionId = context.ConnectionId;
 
-        var hubConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+        var session = _cacheProviderFactory().Get<ManagedHubSession<T>>(userId);
         
-        if (hubConnection != null)
+        if (session != null)
         {
-            if (hubConnection.ConnectionIds.Count > 1)
+            if (session.ConnectionIds.Count > 1)
             {
                 // Remove connection ID 
-                hubConnection.ConnectionIds.Remove(connectionId);
+                session.ConnectionIds.Remove(connectionId);
             }
             else
             {
                 // No other connections, remove from cache
-                _cacheProvider.Remove(userId);
+                _cacheProviderFactory().Remove(userId);
             }
         }
         else // object reference not expired
         {
-            _logger.LogWarning($"{_cacheProvider.GetType()} Failed to find the cache, is it expired?");
+            _logger.LogWarning($"{_cacheProviderFactory().GetType()} Failed to find the cache, is it expired?");
         }
     }
 
@@ -114,11 +115,11 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     {
         try
         {
-            var hubConnection = _cacheProvider.Get<ManagedHubConnection<T>>(userId);
+            ManagedHubSession<T>? hubConnection = _cacheProviderFactory().Get<ManagedHubSession<T>>(userId);
             if (hubConnection != null)
             {
                 var connectionIds = hubConnection.ConnectionIds;
-                EventBinding? binding = _configuration.GetEventBinding(typeof(T));
+                ManagedHubConfig? binding = _configuration.GetConfig(typeof(T));
 
                 if (binding is null || !binding.Outbound.TryGetValue(typeof(TMessage), out var config))
                 {
@@ -129,7 +130,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
                 string serializedMessage = config.Serializer(message!);
 
                 // Send to each connection
-                foreach (var id in connectionIds)
+                foreach (string id in connectionIds)
                 {
                     await _hub.Clients.Client(id).Push(config.Topic, serializedMessage);
                 }
