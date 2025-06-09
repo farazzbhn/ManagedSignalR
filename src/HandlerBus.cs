@@ -1,5 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Exceptions;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR;
 
@@ -17,7 +18,7 @@ public sealed class HandlerBus
     /// that can process the specified command, returning the handler's response.
     /// </summary>
     /// <param name="command">The post command instance to handle.</param>
-    public async Task Handle(dynamic command)
+    public async Task Handle(dynamic command, HubCallerContext context)
     {
         // Determine the type (e.g., IPostHandler<Location>
         Type handlerType = typeof(IManagedHubHandler<>).MakeGenericType(command.GetType());
@@ -33,7 +34,7 @@ public sealed class HandlerBus
 
             try
             {
-                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command });
+                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context });
             }
             catch (Exception exception)
             {

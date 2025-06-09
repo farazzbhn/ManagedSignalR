@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
+/// <summary>
+/// Central configuration for SignalR hubs and their message mappings
+/// </summary>
 public class ManagedSignalRConfig
 {
     internal readonly List<ManagedHubConfig> Configs;
@@ -20,10 +23,10 @@ public class ManagedSignalRConfig
 
 
     /// <summary>
-    /// Configures a hub with its event mappings
+    /// Adds a hub configuration with its message mappings
     /// </summary>
-    /// <typeparam name="THub">The hub type that inherits from ManagedHub</typeparam>
-    /// <returns>An EventMapping instance for fluent configuration</returns>
+    /// <typeparam name="THub">Hub type to configure</typeparam>
+    /// <returns>Configuration builder for the hub</returns>
     public ManagedHubConfig AddHub<THub>() where THub : ManagedHub<THub>
     {
         // Find or create mapping for the hub
@@ -37,7 +40,12 @@ public class ManagedSignalRConfig
         return config;
     }
 
-    internal ManagedHubConfig? GetConfig(Type hubType)
+    /// <summary>
+    /// Gets configuration for a specific hub type
+    /// </summary>
+    /// <param name="hubType">Type of hub to get config for</param>
+    /// <returns>Hub configuration or null if not found</returns>
+    internal ManagedHubConfig? FindManagedHubConfig(Type hubType)
     {
         var config = Configs.SingleOrDefault(x => x.HubType == hubType);
         return config;

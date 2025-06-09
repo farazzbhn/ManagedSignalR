@@ -7,6 +7,9 @@ using System.Text.Json;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
+/// <summary>
+/// Configuration for a SignalR hub's message mappings and handlers
+/// </summary>
 public class ManagedHubConfig
 {
     private readonly IServiceCollection _services;
@@ -23,32 +26,32 @@ public class ManagedHubConfig
 
 
     /// <summary>
-    /// Concrete Hub type
+    /// Hub type being configured
     /// </summary>
     public Type HubType { get; set; }
 
 
     /// <summary>
-    /// Maps the Submit (incoming) topics to handler types and deserialization functions
+    /// Maps incoming topics to handlers and deserializers
     /// </summary>
-    internal Dictionary<string, (Type HandlerType, Type MessageType, Func<string, object> Deserializer)> Inbound { get; set; } = new();
+    internal Dictionary<string, (Type HandlerType, Type MessageType, Func<string, object> Deserializer)> ReceiveConfig { get; set; } = new();
 
 
     /// <summary>
-    /// Maps the Push (outgoing) message types to outgoing topics and serialization functions
+    /// Maps outgoing message types to topics and serializers
     /// </summary>
-    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> Outbound { get; set; } = new();
+    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> SendConfig { get; set; } = new();
 
 
     /// <summary>
-    /// Maps a message type to a SignalR topic with custom serialization.
-    /// When the server sends a message, it will be serialized using the provided function and routed to clients under the specified topic.
+    /// Configures how messages are sent to clients
     /// </summary>
-    /// <typeparam name="T">The message type to be pushed to clients</typeparam>
-    public ManagedHubConfig ConfigureNotifyClient<T>(Action<NotifyClientConfiguration<T>> configurer)
+    /// <typeparam name="T">Message type to send</typeparam>
+    /// <param name="configurer">Configuration builder</param>
+    public ManagedHubConfig OnSendToClient<T>(Action<SendConfiguration<T>> configurer)
     {
         
-        var configuration = new NotifyClientConfiguration<T>();
+        var configuration = new SendConfiguration<T>();
 
         configurer.Invoke(configuration);
 
@@ -58,19 +61,20 @@ public class ManagedHubConfig
 
         // and store 
 
-        Outbound[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
+        SendConfig[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
 
         return this;
     }
 
     /// <summary>
-    /// Maps an incoming topic to a C# type processed using the dedicated handler, and deserialized using the custom deserialization provided.
-    /// <b>Registers the handler within the service provider</b>
+    /// Configures how messages are received from clients
     /// </summary>
-    public ManagedHubConfig ConfigureNotifyServer<TModel>(Action<NotifyServerConfiguration<TModel>> configurer)
+    /// <typeparam name="TModel">Message type to receive</typeparam>
+    /// <param name="configurer">Configuration builder</param>
+    public ManagedHubConfig OnReceiveFromClient<TModel>(Action<ReceiveConfiguration<TModel>> configurer)
     {
 
-        var configuration = new NotifyServerConfiguration<TModel>();
+        var configuration = new ReceiveConfiguration<TModel>();
 
         configurer.Invoke(configuration);
         
@@ -79,7 +83,7 @@ public class ManagedHubConfig
         ArgumentException.ThrowIfNullOrEmpty(configuration.Topic);
 
 
-        Inbound[configuration.Topic] = (configuration.HandlerType, typeof(TModel), json => configuration.Deserializer(json));
+        ReceiveConfig[configuration.Topic] = (configuration.HandlerType, typeof(TModel), json => configuration.Deserializer(json));
 
         // And register the scoped handler within the service provider
         _services.AddScoped(configuration.HandlerType);
@@ -89,7 +93,11 @@ public class ManagedHubConfig
 }
     
 
-public class NotifyServerConfiguration<TModel>
+/// <summary>
+/// Builder for configuring server-side message handling
+/// </summary>
+/// <typeparam name="TModel">Message type to handle</typeparam>
+public class ReceiveConfiguration<TModel>
 {
     internal string Topic { get; private set; }
 
@@ -97,20 +105,29 @@ public class NotifyServerConfiguration<TModel>
 
     internal Type HandlerType { get; private set; } = null;
 
-    public NotifyServerConfiguration<TModel> OnTopic(string topic)
+    /// <summary>
+    /// Sets the topic for incoming messages
+    /// </summary>
+    public ReceiveConfiguration<TModel> FromTopic(string topic)
     {
         Topic = topic;
         return this;
     }
 
 
-    public NotifyServerConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
+    /// <summary>
+    /// Sets custom message deserialization
+    /// </summary>
+    public ReceiveConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
     {
         this.Deserializer = deserializer;
         return this;
     }
 
-    public NotifyServerConfiguration<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
+    /// <summary>
+    /// Sets the handler type for processing messages
+    /// </summary>
+    public ReceiveConfiguration<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
     {
         HandlerType = typeof(THandler);
         return this;
@@ -119,18 +136,28 @@ public class NotifyServerConfiguration<TModel>
 }
 
 
-public class NotifyClientConfiguration<TModel>
+/// <summary>
+/// Builder for configuring client-side message sending
+/// </summary>
+/// <typeparam name="TModel">Message type to send</typeparam>
+public class SendConfiguration<TModel>
 {
     internal string? Topic { get; private set; }
     internal Func<TModel, string> Serializer { get; private set; } = message => System.Text.Json.JsonSerializer.Serialize(message);
 
-    public NotifyClientConfiguration<TModel> ToTopic(string topic)
+    /// <summary>
+    /// Sets the topic for outgoing messages
+    /// </summary>
+    public SendConfiguration<TModel> ToTopic(string topic)
     {
         Topic = topic;
         return this;
     }
 
-    public NotifyClientConfiguration<TModel> UseSerializer(Func<TModel, string> serializer)
+    /// <summary>
+    /// Sets custom message serialization
+    /// </summary>
+    public SendConfiguration<TModel> UseSerializer(Func<TModel, string> serializer)
     {
         Serializer = serializer;
         return this;

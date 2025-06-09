@@ -9,11 +9,11 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// This is the default implementation suitable for single-server scenarios.
 /// For distributed systems, consider implementing a distributed cache provider and mind the uniqueness of the key
 /// </summary>
-public class InMemoryCacheProvider : ICacheProvider
+public class DefaultCacheProvider : ICacheProvider
 {
     private readonly ConcurrentDictionary<string, object> _cache = new();
 
-    public T? Get<T>(string key) where T : class
+    public async Task<T?> GetAsync<T>(string key) where T : class
     {
         if (_cache.TryGetValue(key, out var value))
         {
@@ -22,12 +22,12 @@ public class InMemoryCacheProvider : ICacheProvider
         return null;
     }
 
-    public void Set<T>(string key, T value) where T : class
+    public async Task SetAsync<T>(string key, T value) where T : class
     {
         _cache[key] = value;
     }
 
-    public bool Remove(string key)
+    public async Task<bool> RemoveAsync(string key)
     {
         return _cache.TryRemove(key, out _);
     }

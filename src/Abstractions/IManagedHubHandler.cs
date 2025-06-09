@@ -1,16 +1,18 @@
-﻿namespace ManagedLib.ManagedSignalR.Abstractions;
+﻿using Microsoft.AspNetCore.SignalR;
+
+namespace ManagedLib.ManagedSignalR.Abstractions;
 
 
 /// <summary>
-/// Defines a handler capable of processing a specific command type <typeparamref name="TCommand"/> 
+/// Handler for processing specific command types
 /// </summary>
-/// <typeparam name="TCommand">The type of command to handle.</typeparam>
+/// <typeparam name="TCommand">Command type to handle</typeparam>
 public interface IManagedHubHandler<in TCommand> 
 {
     /// <summary>
     /// Handles the specified command asynchronously in a <b>fire &amp; forget </b>manner
     /// </summary>
-    /// <param name="request">The command instance.</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    Task Handle(TCommand request);
+    /// <param name="request">Command to process</param>
+    /// <param name="context">SignalR connection context</param>
+    Task Handle(TCommand request, HubCallerContext context);
 }

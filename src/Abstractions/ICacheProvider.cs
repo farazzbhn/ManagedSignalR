@@ -1,27 +1,30 @@
 ﻿namespace ManagedLib.ManagedSignalR.Abstractions;
 
+/// <summary>
+/// Thread-safe cache for storing SignalR connection data
+/// </summary>
 public interface ICacheProvider
 {
     /// <summary>
-    /// Gets a value from the cache by key.
+    /// Retrieves a value from cache
     /// </summary>
-    /// <typeparam name="T">The type of the value to retrieve.</typeparam>
-    /// <param name="key">The cache key.</param>
-    /// <returns>The cached value if found, otherwise default(T).</returns>
-    T? Get<T>(string key) where T : class;
+    /// <typeparam name="T">Value type</typeparam>
+    /// <param name="key">Cache key</param>
+    /// <returns>Cached value or null</returns>
+    Task<T?> GetAsync<T>(string key) where T : class;
 
     /// <summary>
-    /// Sets a value in the cache with the specified key.
+    /// Stores a value in cache
     /// </summary>
-    /// <typeparam name="T">The type of the value to cache.</typeparam>
-    /// <param name="key">The cache key.</param>
-    /// <param name="value">The value to cache.</param>
-    void Set<T>(string key, T value) where T : class;
+    /// <typeparam name="T">Value type</typeparam>
+    /// <param name="key">Cache key</param>
+    /// <param name="value">Value to store</param>
+    Task SetAsync<T>(string key, T value) where T : class;
 
     /// <summary>
-    /// Removes a value from the cache by key.
+    /// Removes a value from cache
     /// </summary>
-    /// <param name="key">The cache key.</param>
-    /// <returns>True if the value was removed, false if it didn't exist.</returns>
-    bool Remove(string key);
+    /// <param name="key">Cache key</param>
+    /// <returns>True if value was removed</returns>
+    Task<bool> RemoveAsync(string key);
 }

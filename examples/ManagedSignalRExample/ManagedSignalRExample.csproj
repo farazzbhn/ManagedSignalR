@@ -11,7 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\ManagedSignalR.csproj" />
+    <ProjectReference Include="..\..\src\ManagedSignalR.csproj" />
   </ItemGroup>
+
+
 
 </Project>
