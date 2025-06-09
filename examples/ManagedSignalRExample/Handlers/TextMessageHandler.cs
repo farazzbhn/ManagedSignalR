@@ -8,15 +8,15 @@ namespace ManagedSignalRExample.Handlers;
 public class TextMessageHandler : IManagedHubHandler<TextMessage>
 {
 
-    private readonly ManagedHubHelper<ChatHub> _hubHelper;
+    private readonly ManagedHubHelper<ApplicationHub> _hubHelper;
 
-    public TextMessageHandler(ManagedHubHelper<ChatHub> hubHelper)
+    public TextMessageHandler(ManagedHubHelper<ApplicationHub> hubHelper)
     {
         _hubHelper = hubHelper;
     }
 
     public async Task Handle(TextMessage request, HubCallerContext context)
     {
-        await _hubHelper.TrySendToClient();
+        await _hubHelper.TrySend();
     }
 }

@@ -16,34 +16,36 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddManagedSignalR(config =>
 {
-    config.AddHub<ChatHub>()
+    config.AddHub<ApplicationHub>()
 
-        .OnSendToClient<Message>(snd => 
-            snd
+        .ConfigReceiveOnClient<Message>(cfg =>
+            cfg
                 .BindTopic("msg")
                 .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-        .OnReceiveFromClient<TextMessage>(rcv =>
-            rcv
-                .BindTopic("msg")
-                // Not invoking the UseDeserializer method here means that the incoming message
-                // will be deserialized using the default JSON deserializer.
-                //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<IncomingMessage>(str))
-                .UseHandler<TextMessageHandler>())
-
-        .OnReceiveFromClient<Coordinates>(receive =>
+        .ConfigReceiveOnServer<Coordinates>(receive =>
             receive
-                .BindTopic("gps")
+                .BindTopic("loc")
                 // coordinates are sent as "lat,long" string 
-                .UseDeserializer(str => {
-                    string[] split = str.Split(','); 
+                .UseDeserializer(str =>
+                {
+                    string[] split = str.Split(',');
                     return new Coordinates
                     {
                         Latitude = double.Parse(split[0]),
                         Longitude = double.Parse(split[1])
                     };
                 })
-                .UseHandler<CoordinatesHandler>());
+                .UseHandler<CoordinatesHandler>())
+
+        .ConfigReceiveOnServer<TextMessage>(rcv =>
+            rcv
+                .BindTopic("msg")
+                // Not invoking the UseDeserializer method here means that the incoming message
+                // will be deserialized using the default JSON deserializer.
+                //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<IncomingMessage>(str))
+                .UseHandler<TextMessageHandler>());
+
 });
 
 

@@ -45,7 +45,7 @@ public class ManagedSignalRConfig
     /// </summary>
     /// <param name="hubType">Type of hub to get config for</param>
     /// <returns>Hub configuration or null if not found</returns>
-    internal ManagedHubConfig? FindManagedHubConfig(Type hubType)
+    internal ManagedHubConfig? GetManagedHubConfig(Type hubType)
     {
         var config = Configs.SingleOrDefault(x => x.HubType == hubType);
         return config;

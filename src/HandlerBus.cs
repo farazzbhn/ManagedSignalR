@@ -34,7 +34,7 @@ public sealed class HandlerBus
 
             try
             {
-                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context });
+                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context});
             }
             catch (Exception exception)
             {

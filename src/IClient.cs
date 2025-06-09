@@ -14,6 +14,6 @@ namespace ManagedLib.ManagedSignalR
         /// </summary>
         /// <param name="topic">Message routing topic</param>
         /// <param name="payload">Serialized message data</param>
-        Task SendToClient(string topic, string payload) => Task.CompletedTask;
+        Task ReceiveOnClient(string topic, string payload) => Task.CompletedTask;
     }
 }

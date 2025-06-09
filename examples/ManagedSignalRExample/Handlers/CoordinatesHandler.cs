@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.SignalR;
 namespace ManagedSignalRExample.Handlers.Chat;
 public class CoordinatesHandler : IManagedHubHandler<Coordinates>
 {
-    private readonly ManagedHubHelper<ChatHub> _hubHelper;
+    private readonly ManagedHubHelper<ApplicationHub> _hubHelper;
 
-    public CoordinatesHandler(ManagedHubHelper<ChatHub> hubHelper)
+    public CoordinatesHandler(ManagedHubHelper<ApplicationHub> hubHelper)
     {
         _hubHelper = hubHelper;
     }

@@ -6,7 +6,7 @@ using System;
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 /// <summary>
-/// Base class for SignalR hubs with automatic message handling <br />
+/// Base class for SignalR hubs with topic-based routing for messages <br />
 /// Features: <br />
 /// - Automatic connection management <br />
 /// - Automatic Message deserialization &amp; routing <br />
@@ -20,7 +20,6 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
 {
     protected readonly ManagedHubHelper<T> _hubHelper;
-
     private readonly HandlerBus _handlerBus;
     private readonly ManagedSignalRConfig _configuration;
 
@@ -46,9 +45,19 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     public sealed override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();
-        await _hubHelper.AddConnectionAsync(Context);
+
+        bool added = await _hubHelper.TryAddConnectionAsync(Context);
+        if (!added)
+        {
+            // Disconnect the client by aborting the connection
+            Context.Abort();
+            return;
+        }
+
+        // run optional hook logic
         await OnConnectedHookAsync();
     }
+
 
     /// <summary>
     /// Override to add custom logic on connection
@@ -61,7 +70,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
     public sealed override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await _hubHelper.RemoveConnectionAsync(Context);
+        bool removed = await _hubHelper.TryRemoveConnectionAsync(Context);
         await base.OnDisconnectedAsync(exception);
         await OnDisconnectedHookAsync();
     }
@@ -78,9 +87,9 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// </summary>
     /// <param name="topic">Message topic for routing</param>
     /// <param name="message">Serialized message data</param>
-    public async Task ReceiveFromClient(string topic, string message)
+    public async Task ReceiveOnServer(string topic, string message)
     {
-        ManagedHubConfig? binding = _configuration.FindManagedHubConfig(typeof(T));
+        ManagedHubConfig? binding = _configuration.GetManagedHubConfig(typeof(T));
 
         if (binding is null || !binding.ReceiveConfig.TryGetValue(topic, out var config))
             throw new InvalidOperationException($"No handler configured for topic {topic}");
@@ -93,16 +102,3 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     }
 }
 
-/// <summary>
-/// Base class for SignalR hubs that automatically infers the hub type
-/// </summary>
-public abstract class ManagedHub : ManagedHub<ManagedHub>
-{
-    protected ManagedHub(
-        HandlerBus handlerBus,
-        ManagedHubHelper<ManagedHub> hubHelper,
-        ManagedSignalRConfig configuration
-    ) : base(handlerBus, hubHelper, configuration)
-    {
-    }
-}
