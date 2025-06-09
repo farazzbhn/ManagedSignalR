@@ -1,25 +1,24 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 
 namespace ManagedLib.ManagedSignalR;
-internal class LockProvider 
+internal class DistributedLockProvider 
 {
-    private readonly ICacheProvider _cacheProvider;
-    private static readonly TimeSpan LockExpiry = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan PollDelay = TimeSpan.FromMilliseconds(100);
 
-    public LockProvider(ICacheProvider cacheProvider)
+    private readonly ICacheProvider _cacheProvider;
+
+    public DistributedLockProvider(ICacheProvider cacheProvider)
     {
         _cacheProvider = cacheProvider;
     }
 
-    private static string GenKey(string key) => $"{nameof(LockProvider)}:{key}";
+    private static string GenKey(string key) => $"{nameof(DistributedLockProvider)}:{key}";
 
     /// <summary>
     /// Attempts to acquire a lock on the specified key.
     /// </summary>
     /// <param name="key">Unique lock key</param>
     /// <param name="timeout">How long to wait before giving up</param>
-    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The token if lock was acquired, otherwise null</returns>
     public async Task<string?> WaitAsync(string userId, TimeSpan? timeout = null)
     {

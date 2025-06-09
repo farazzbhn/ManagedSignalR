@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Implementations
 {
-    internal class DefaultUserIdResolver : IUserIdResolver
+    internal class DefaultIdentityProvider : IIdentityProvider
     {
         public string GetUserId(HubCallerContext context) => context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? Constants.Anonymous;
     }

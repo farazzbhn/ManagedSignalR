@@ -19,27 +19,27 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
 
     protected readonly IHubContext<T, IClient> Hub;
     private readonly ManagedSignalRConfig _cfg;
-    private readonly IUserIdResolver _userIdResolver;
+    private readonly IIdentityProvider _identityProvider;
     private readonly ILogger<ManagedHubHelper<T>> _logger;
     private readonly ICacheProvider _cacheProvider;
-    private readonly LockProvider _lockProvider;
+    private readonly DistributedLockProvider _lockProvider;
 
 
     public ManagedHubHelper
     (
         IHubContext<T, IClient> hub,
         ManagedSignalRConfig cfg,
-        IUserIdResolver userIdResolver,
+        IIdentityProvider identityProvider,
         ILogger<ManagedHubHelper<T>> logger,
         ICacheProvider cacheProvider
     )
     {
         Hub = hub;
         _cfg = cfg;
-        _userIdResolver = userIdResolver;
+        _identityProvider = identityProvider;
         _logger = logger;
         _cacheProvider = cacheProvider;
-        _lockProvider = new LockProvider(_cacheProvider);
+        _lockProvider = new DistributedLockProvider(_cacheProvider);
     }
 
 
@@ -48,7 +48,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     /// </summary>
     internal async Task<bool> TryAddConnectionAsync(HubCallerContext context)
     {
-        string userId = _userIdResolver.GetUserId(context);
+        string userId = _identityProvider.GetUserId(context);
         string? token = await _lockProvider.WaitAsync(userId);
 
         // failed to acquire lock => return false
@@ -95,7 +95,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     /// <returns>True if the connection was removed or the session was deleted; false otherwise</returns>
     internal async Task<bool> TryRemoveConnectionAsync(HubCallerContext context)
     {
-        string userId = _userIdResolver.GetUserId(context);
+        string userId = _identityProvider.GetUserId(context);
         string connectionId = context.ConnectionId;
 
         string? token = await _lockProvider.WaitAsync(userId);
@@ -162,7 +162,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
 
             foreach (string connectionId in hubConnection.ConnectionIds)
             {
-                await Hub.Clients.Client(connectionId).ReceiveOnClient(config.Topic, serializedMessage);
+                await Hub.Clients.Client(connectionId).FireClient(config.Topic, serializedMessage);
                 _logger.LogDebug("[{Component}] Sent message of type {MessageType} to connection {ConnectionId} (User: {UserId})",
                     nameof(ManagedHubHelper<T>), typeof(TMessage).Name, connectionId, userId);
             }

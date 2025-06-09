@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 
 namespace ManagedSignalRExample.Models;
-public record TextMessage
+public record NewMessage
 {
     [JsonPropertyName("text")]
     public string Text { get; set; }

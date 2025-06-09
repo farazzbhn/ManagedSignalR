@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedSignalRExample.Hubs;
-public class CustomIdentityResolver : IUserIdResolver
+public class CustomIdentityResolver : IIdentityProvider
 {
-    public Task<string> GetUserId(HubCallerContext context) => Task.FromResult("anonymous");
+    public string GetUserId(HubCallerContext context) => ManagedLib.ManagedSignalR.Constants.Anonymous;
 }

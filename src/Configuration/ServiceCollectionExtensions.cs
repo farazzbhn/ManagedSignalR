@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
 
         // Register the default cache provider
         services.AddSingleton<ICacheProvider, DefaultCacheProvider>();
-        services.AddScoped<IUserIdResolver, DefaultUserIdResolver>();
+        services.AddScoped<IIdentityProvider, DefaultIdentityProvider>();
 
         // Configure SignalR
         services.AddSignalR(options =>

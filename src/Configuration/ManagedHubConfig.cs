@@ -48,7 +48,7 @@ public class ManagedHubConfig
     /// </summary>
     /// <typeparam name="T">Message type to send</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfig ConfigReceiveOnClient<T>(Action<SendConfiguration<T>> configurer)
+    public ManagedHubConfig OnFireClient<T>(Action<SendConfiguration<T>> configurer)
     {
         
         var configuration = new SendConfiguration<T>();
@@ -71,7 +71,7 @@ public class ManagedHubConfig
     /// </summary>
     /// <typeparam name="TModel">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfig ConfigReceiveOnServer<TModel>(Action<ReceiveConfiguration<TModel>> configurer)
+    public ManagedHubConfig OnFireServer<TModel>(Action<ReceiveConfiguration<TModel>> configurer)
     {
 
         var configuration = new ReceiveConfiguration<TModel>();
@@ -108,7 +108,7 @@ public class ReceiveConfiguration<TModel>
     /// <summary>
     /// Sets the topic for incoming messages
     /// </summary>
-    public ReceiveConfiguration<TModel> BindTopic(string topic)
+    public ReceiveConfiguration<TModel> RouteFromTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -148,7 +148,7 @@ public class SendConfiguration<TModel>
     /// <summary>
     /// Sets the topic for outgoing messages
     /// </summary>
-    public SendConfiguration<TModel> BindTopic(string topic)
+    public SendConfiguration<TModel> RouteToTopic(string topic)
     {
         Topic = topic;
         return this;

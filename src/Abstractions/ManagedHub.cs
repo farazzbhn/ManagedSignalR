@@ -87,7 +87,7 @@ public abstract class ManagedHub<T> : Hub<IClient> where T : Hub<IClient>
     /// </summary>
     /// <param name="topic">Message topic for routing</param>
     /// <param name="message">Serialized message data</param>
-    public async Task ReceiveOnServer(string topic, string message)
+    public async Task FireServer(string topic, string message)
     {
         ManagedHubConfig? binding = _configuration.GetManagedHubConfig(typeof(T));
 
