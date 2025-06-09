@@ -20,12 +20,12 @@ builder.Services.AddManagedSignalR(config =>
 
         .OnSendToClient<Message>(snd => 
             snd
-                .ToTopic("msg")
+                .BindTopic("msg")
                 .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
         .OnReceiveFromClient<TextMessage>(rcv =>
             rcv
-                .FromTopic("msg")
+                .BindTopic("msg")
                 // Not invoking the UseDeserializer method here means that the incoming message
                 // will be deserialized using the default JSON deserializer.
                 //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<IncomingMessage>(str))
@@ -33,7 +33,7 @@ builder.Services.AddManagedSignalR(config =>
 
         .OnReceiveFromClient<Coordinates>(receive =>
             receive
-                .FromTopic("gps")
+                .BindTopic("gps")
                 // coordinates are sent as "lat,long" string 
                 .UseDeserializer(str => {
                     string[] split = str.Split(','); 
