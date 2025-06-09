@@ -108,7 +108,7 @@ public class ReceiveConfiguration<TModel>
     /// <summary>
     /// Sets the topic for incoming messages
     /// </summary>
-    public ReceiveConfiguration<TModel> RouteFromTopic(string topic)
+    public ReceiveConfiguration<TModel> BindFromTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -148,7 +148,7 @@ public class SendConfiguration<TModel>
     /// <summary>
     /// Sets the topic for outgoing messages
     /// </summary>
-    public SendConfiguration<TModel> RouteToTopic(string topic)
+    public SendConfiguration<TModel> BindToTopic(string topic)
     {
         Topic = topic;
         return this;
