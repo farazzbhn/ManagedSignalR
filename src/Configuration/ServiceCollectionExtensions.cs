@@ -18,21 +18,20 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<ManagedSignalRConfig> configurer
+        Action<GlobalSettings> configurer
     )
     {
         // Create and configure the hub configuration
-        var configuration = new ManagedSignalRConfig(services);
+        var configuration = new GlobalSettings(services);
 
         configurer.Invoke(configuration);
 
         // Register core services
         services.AddSingleton(configuration);
-        services.AddSingleton<HandlerBus>();
+        services.AddSingleton<ManagedHubHandlerBus>();
 
         // Register the default cache provider
         services.AddSingleton<ICacheProvider, DefaultCacheProvider>();
-        services.AddScoped<IIdentityProvider, DefaultIdentityProvider>();
 
         // Configure SignalR
         services.AddSignalR(options =>

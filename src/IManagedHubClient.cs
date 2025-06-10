@@ -7,13 +7,13 @@ namespace ManagedLib.ManagedSignalR
     /// Example usage:
     /// public class ChatHub : ManagedHub<ChatHub> { }
     /// </summary>
-    public interface IClient
+    public interface IManagedHubClient
     {
         /// <summary>
         /// sends a notification with a topic and serialized payload
         /// </summary>
         /// <param name="topic">Message routing topic</param>
         /// <param name="payload">Serialized message data</param>
-        Task FireClient(string topic, string payload) => Task.CompletedTask;
+        Task InvokeClient(string topic, string payload) => Task.CompletedTask;
     }
 }

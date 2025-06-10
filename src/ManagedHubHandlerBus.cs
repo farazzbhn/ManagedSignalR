@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR;
 
-public sealed class HandlerBus 
+public sealed class ManagedHubHandlerBus 
 {
     private readonly IServiceProvider _serviceProvider;
 
-    public HandlerBus(IServiceProvider serviceProvider)
+    public ManagedHubHandlerBus(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -26,7 +26,7 @@ public sealed class HandlerBus
         // inject the list of registered handlers e.g., ICommandHandler<Request, Response>
         var handlers = (IEnumerable<object>)_serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(handlerType));
 
-        if (handlers == null) throw new HandlerNotFoundException(command.GetType());
+        if (handlers == null) throw new MissingHandlerException(command.GetType());
 
         foreach (var handler in handlers)
         {

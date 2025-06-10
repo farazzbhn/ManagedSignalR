@@ -1,5 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Implementations;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
@@ -13,42 +14,45 @@ namespace ManagedLib.ManagedSignalR;
 /// - Support for multiple connections per user <br />
 /// - Automatic connection cleanup <br />
 /// </summary>
-/// <typeparam name="T">Hub type that implements EventBinding for client invocations</typeparam>
-public class ManagedHubHelper<T> where T : Hub<IClient>
+/// <typeparam name="THub">Hub type that implements EventBinding for client invocations</typeparam>
+public class ManagedHubHelper<THub> where THub : Hub<IManagedHubClient>
 {
 
-    protected readonly IHubContext<T, IClient> Hub;
-    private readonly ManagedSignalRConfig _cfg;
-    private readonly IIdentityProvider _identityProvider;
-    private readonly ILogger<ManagedHubHelper<T>> _logger;
+    protected IHubContext<THub, IManagedHubClient> Hub => _hub;
+
+    private readonly IHubContext<THub, IManagedHubClient> _hub;
+    private readonly GlobalSettings _configuration;
+    private readonly ILogger<ManagedHubHelper<THub>> _logger;
     private readonly ICacheProvider _cacheProvider;
-    private readonly DistributedLockProvider _lockProvider;
+    private readonly DefaultLockProvider _lockProvider;
 
 
     public ManagedHubHelper
     (
-        IHubContext<T, IClient> hub,
-        ManagedSignalRConfig cfg,
+        IHubContext<THub, IManagedHubClient> hub,
+        GlobalSettings configuration,
         IIdentityProvider identityProvider,
-        ILogger<ManagedHubHelper<T>> logger,
+        ILogger<ManagedHubHelper<THub>> logger,
         ICacheProvider cacheProvider
     )
     {
-        Hub = hub;
-        _cfg = cfg;
+        _hub = hub;
+        _configuration = configuration;
         _identityProvider = identityProvider;
         _logger = logger;
         _cacheProvider = cacheProvider;
-        _lockProvider = new DistributedLockProvider(_cacheProvider);
+        _lockProvider = new DefaultLockProvider(_cacheProvider);
     }
 
 
     /// <summary>
-    /// Adds a new connection to the user's session
+    /// Adds a new connection to the user's session ( within the cache )
     /// </summary>
     internal async Task<bool> TryAddConnectionAsync(HubCallerContext context)
     {
         string userId = _identityProvider.GetUserId(context);
+
+        // try and acquire a lock 
         string? token = await _lockProvider.WaitAsync(userId);
 
         // failed to acquire lock => return false
@@ -75,7 +79,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
             await _cacheProvider.SetAsync(userId, session);
             return true;
         }
-        catch(Exception ex) 
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to add connection for user {UserId}", userId);
             return false;
@@ -84,13 +88,12 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
         {
             await _lockProvider.ReleaseAsync(userId, token);
         }
-
     }
 
 
 
     /// <summary>
-    /// Removes a connection from the user's session and cleans up if no connections remain.
+    /// Removes a connection from the user's session ( within the cache ) and cleans up if no connections remain.
     /// </summary>
     /// <returns>True if the connection was removed or the session was deleted; false otherwise</returns>
     internal async Task<bool> TryRemoveConnectionAsync(HubCallerContext context)
@@ -131,51 +134,7 @@ public class ManagedHubHelper<T> where T : Hub<IClient>
     }
 
 
-    /// <summary>
-    /// Sends a message to all connections of a specific user
-    /// </summary>
-    /// <typeparam name="TMessage">Type of message to send</typeparam>
-    /// <param name="userId">Target user ID</param>
-    /// <param name="message">Message to send</param>
-    /// <returns>True if message was sent successfully</returns>
-    public async Task<bool> TrySend<TMessage>(string userId, TMessage message)
-    {
-        try
-        {
-            ManagedHubSession? hubConnection = await _cacheProvider.GetAsync<ManagedHubSession>(userId);
-            if (hubConnection == null || hubConnection.ConnectionIds.Count == 0)
-            {
-                _logger.LogWarning("[{Component}] Cannot send message to user '{UserId}' – no active connections",
-                    nameof(ManagedHubHelper<T>), userId);
-                return false;
-            }
 
-            ManagedHubConfig? binding = _cfg.GetManagedHubConfig(typeof(T));
-            if (binding is null || !binding.SendConfig.TryGetValue(typeof(TMessage), out var config))
-            {
-                _logger.LogError("[{Component}] Send failed – No configuration found for message type {MessageType} on hub {HubType}",
-                    nameof(ManagedHubHelper<T>), typeof(TMessage).FullName, typeof(T).Name);
-                return false;
-            }
-
-            string serializedMessage = config.Serializer(message!);
-
-            foreach (string connectionId in hubConnection.ConnectionIds)
-            {
-                await Hub.Clients.Client(connectionId).FireClient(config.Topic, serializedMessage);
-                _logger.LogDebug("[{Component}] Sent message of type {MessageType} to connection {ConnectionId} (User: {UserId})",
-                    nameof(ManagedHubHelper<T>), typeof(TMessage).Name, connectionId, userId);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[{Component}] Push failed for user '{UserId}' and message type {MessageType}",
-                nameof(ManagedHubHelper<T>), userId, typeof(TMessage).Name);
-            return false;
-        }
-    }
 
 }
 

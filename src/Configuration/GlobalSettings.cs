@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
@@ -6,48 +7,48 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// <summary>
 /// Central configuration for SignalR hubs and their message mappings
 /// </summary>
-public class ManagedSignalRConfig
+public class GlobalSettings
 {
-    internal readonly List<ManagedHubConfig> Configs;
+    internal List<ManagedHubConfiguration> Configurations { get; }
 
     private readonly IServiceCollection _services;
 
-    public ManagedSignalRConfig
+    public GlobalSettings
     (
         IServiceCollection services
     )
     {
-        Configs = new List<ManagedHubConfig>();
+        Configurations = new List<ManagedHubConfiguration>();
         _services = services;
     }
 
 
     /// <summary>
-    /// Adds a hub configuration with its message mappings
+    /// Adds a managed hub 
     /// </summary>
     /// <typeparam name="THub">Hub type to configure</typeparam>
     /// <returns>Configuration builder for the hub</returns>
-    public ManagedHubConfig AddHub<THub>() where THub : ManagedHub<THub>
+    public ManagedHubConfiguration AddHub<THub>() where THub : ManagedHub
     {
         // Find or create mapping for the hub
-        var config = Configs.FirstOrDefault(m => m.HubType == typeof(THub));
+        var config = Configurations.FirstOrDefault(m => m.HubType == typeof(THub));
 
         if (config == null)
         {
-            config = new ManagedHubConfig(typeof(THub), _services);
-            Configs.Add(config);
+            config = new ManagedHubConfiguration(typeof(THub), _services);
+            Configurations.Add(config);
         }
         return config;
     }
 
     /// <summary>
-    /// Gets configuration for a specific hub type
+    /// Finds the <see cref="ManagedHubConfiguration"/> associate with the SignalR hub of provided type
     /// </summary>
     /// <param name="hubType">Type of hub to get config for</param>
     /// <returns>Hub configuration or null if not found</returns>
-    internal ManagedHubConfig? GetManagedHubConfig(Type hubType)
+    internal ManagedHubConfiguration? FindConfiguration(Type hubType)
     {
-        var config = Configs.SingleOrDefault(x => x.HubType == hubType);
+        var config = Configurations.SingleOrDefault(x => x.HubType == hubType);
         return config;
     }
 }

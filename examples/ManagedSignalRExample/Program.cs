@@ -18,14 +18,14 @@ builder.Services.AddManagedSignalR(config =>
 {
     config.AddHub<ApplicationHub>()
 
-        .OnFireClient<Message>(cfg =>
+        .ConfigReceiveOnClient<Message>(cfg =>
             cfg
-                .BindToTopic("msg")
+                .BindTopic("msg")
                 .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-        .OnFireServer<Coordinates>(cfg =>
+        .ConfigReceiveOnServer<Coordinates>(cfg =>
             cfg
-                .BindFromTopic("loc")
+                .BindTopic("loc")
                 // coordinates are sent as "lat,long" string 
                 .UseDeserializer(str =>
                 {
@@ -38,9 +38,9 @@ builder.Services.AddManagedSignalR(config =>
                 })
                 .UseHandler<CoordinatesHandler>())
 
-        .OnFireServer<NewMessage>(cfg =>
+        .ConfigReceiveOnServer<NewMessage>(cfg =>
             cfg
-                .BindFromTopic("msg")
+                .BindTopic("msg")
                 // Not invoking the UseDeserializer method here means that the incoming message
                 // will be deserialized using the default JSON deserializer.
                 //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<IncomingMessage>(str))

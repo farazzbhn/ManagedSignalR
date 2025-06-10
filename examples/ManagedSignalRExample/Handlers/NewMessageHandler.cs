@@ -33,6 +33,6 @@ public class NewMessageHandler : IManagedHubHandler<NewMessage>
             Text = $"You said : {request.Text}"
         };
 
-        await _hubHelper.TrySend(userId, msg);
+        await _hubHelper.PushToClient(userId, msg);
     }
 }

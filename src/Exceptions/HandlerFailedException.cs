@@ -4,12 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ManagedLib.ManagedSignalR.Exceptions
-{
-    public class HandlerFailedException : Exception
-    {
-        public HandlerFailedException(Type handlerType, Exception innerException) : base($"Handler {handlerType} encountered an exception.", innerException)
-        {
-        }
-    }
-}
+namespace ManagedLib.ManagedSignalR.Exceptions;
+    public class HandlerFailedException(Type handlerType, Exception innerException)
+        : Exception($"Handler {handlerType} encountered an exception.", innerException);

@@ -7,14 +7,12 @@ using System.Text.Json;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
-/// <summary>
-/// Configuration for a SignalR hub's message mappings and handlers
-/// </summary>
-public class ManagedHubConfig
+
+public sealed class ManagedHubConfiguration
 {
     private readonly IServiceCollection _services;
 
-    public ManagedHubConfig
+    public ManagedHubConfiguration
     (
         Type hubType,
         IServiceCollection services
@@ -28,7 +26,7 @@ public class ManagedHubConfig
     /// <summary>
     /// Hub type being configured
     /// </summary>
-    public Type HubType { get; set; }
+    internal Type HubType { get; set; }
 
 
     /// <summary>
@@ -40,7 +38,7 @@ public class ManagedHubConfig
     /// <summary>
     /// Maps outgoing message types to topics and serializers
     /// </summary>
-    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> SendConfig { get; set; } = new();
+    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> Client { get; set; } = new();
 
 
     /// <summary>
@@ -48,10 +46,10 @@ public class ManagedHubConfig
     /// </summary>
     /// <typeparam name="T">Message type to send</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfig OnFireClient<T>(Action<SendConfiguration<T>> configurer)
+    public ManagedHubConfiguration ConfigReceiveOnClient<T>(Action<SendToClientConfiguration<T>> configurer)
     {
         
-        var configuration = new SendConfiguration<T>();
+        var configuration = new SendToClientConfiguration<T>();
 
         configurer.Invoke(configuration);
 
@@ -61,7 +59,7 @@ public class ManagedHubConfig
 
         // and store 
 
-        SendConfig[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
+        Client[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
 
         return this;
     }
@@ -71,10 +69,10 @@ public class ManagedHubConfig
     /// </summary>
     /// <typeparam name="TModel">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfig OnFireServer<TModel>(Action<ReceiveConfiguration<TModel>> configurer)
+    public ManagedHubConfiguration ConfigReceiveOnServer<TModel>(Action<ReceiveOnServerConfiguration<TModel>> configurer)
     {
 
-        var configuration = new ReceiveConfiguration<TModel>();
+        var configuration = new ReceiveOnServerConfiguration<TModel>();
 
         configurer.Invoke(configuration);
         
@@ -91,13 +89,10 @@ public class ManagedHubConfig
         return this;
     }
 }
-    
 
-/// <summary>
-/// Builder for configuring server-side message handling
-/// </summary>
-/// <typeparam name="TModel">Message type to handle</typeparam>
-public class ReceiveConfiguration<TModel>
+
+
+public sealed class ReceiveOnServerConfiguration<TModel>
 {
     internal string Topic { get; private set; }
 
@@ -108,7 +103,7 @@ public class ReceiveConfiguration<TModel>
     /// <summary>
     /// Sets the topic for incoming messages
     /// </summary>
-    public ReceiveConfiguration<TModel> BindFromTopic(string topic)
+    public ReceiveOnServerConfiguration<TModel> BindTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -118,7 +113,7 @@ public class ReceiveConfiguration<TModel>
     /// <summary>
     /// Sets custom message deserialization
     /// </summary>
-    public ReceiveConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
+    public ReceiveOnServerConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
     {
         this.Deserializer = deserializer;
         return this;
@@ -127,7 +122,7 @@ public class ReceiveConfiguration<TModel>
     /// <summary>
     /// Sets the handler type for processing messages
     /// </summary>
-    public ReceiveConfiguration<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
+    public ReceiveOnServerConfiguration<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
     {
         HandlerType = typeof(THandler);
         return this;
@@ -136,11 +131,7 @@ public class ReceiveConfiguration<TModel>
 }
 
 
-/// <summary>
-/// Builder for configuring client-side message sending
-/// </summary>
-/// <typeparam name="TModel">Message type to send</typeparam>
-public class SendConfiguration<TModel>
+public sealed class SendToClientConfiguration<TModel>
 {
     internal string? Topic { get; private set; }
     internal Func<TModel, string> Serializer { get; private set; } = message => System.Text.Json.JsonSerializer.Serialize(message);
@@ -148,7 +139,7 @@ public class SendConfiguration<TModel>
     /// <summary>
     /// Sets the topic for outgoing messages
     /// </summary>
-    public SendConfiguration<TModel> BindToTopic(string topic)
+    public SendToClientConfiguration<TModel> BindTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -157,7 +148,7 @@ public class SendConfiguration<TModel>
     /// <summary>
     /// Sets custom message serialization
     /// </summary>
-    public SendConfiguration<TModel> UseSerializer(Func<TModel, string> serializer)
+    public SendToClientConfiguration<TModel> UseSerializer(Func<TModel, string> serializer)
     {
         Serializer = serializer;
         return this;
