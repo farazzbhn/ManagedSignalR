@@ -48,7 +48,7 @@ public class GlobalSettings
     /// <returns>Hub configuration or null if not found</returns>
     internal ManagedHubConfiguration? FindConfiguration(Type hubType)
     {
-        var config = Configurations.SingleOrDefault(x => x.HubType == hubType);
+        ManagedHubConfiguration? config = Configurations.SingleOrDefault(x => x.HubType == hubType);
         return config;
     }
 }

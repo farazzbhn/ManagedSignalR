@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace ManagedLib.ManagedSignalR.Exceptions
 {
-    internal class ManagedHubHelper
-    {
-    }
+    public class ServiceNotRegisteredException(string type)
+        : Exception($"Failed to acquire service {type} from the DI container.");
 }

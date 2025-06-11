@@ -43,6 +43,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         await base.OnConnectedAsync();
 
         string userId = Context.UserIdentifier ?? Constants.Anonymous;
+        string connectionId = Context.ConnectionId;
 
         // Attempt to acquire a distributed ity lock. 
         string? token = await _lockProvider.WaitAsync(userId);
@@ -81,6 +82,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             Context.Abort();
             return;
         }
+
         // Release the distributed lock
         finally
         {
@@ -88,7 +90,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         }
 
         // Invoke the hook
-        await OnConnectedHookAsync();
+        await OnConnectedHookAsync(userId, connectionId);
     }
 
 
@@ -101,7 +103,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         var userId = Context.UserIdentifier ?? Constants.Anonymous;
         var connectionId = Context.ConnectionId;
 
-        await OnDisconnectedHookAsync();
+        await OnDisconnectedHookAsync(userId, connectionId);
 
 
         // Attempt to acquire a distributed ity lock. 
@@ -173,16 +175,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         await _bus.Handle(deserializedMessage, Context);
     }
 
-
+    /// <summary>
     /// Empty hook &amp; Override to add custom logic on connection
     /// </summary>
-    protected Task OnConnectedHookAsync() => Task.CompletedTask;
+    protected Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
-    /// <summary>
     /// Empty hook &amp; Override to add custom logic on disconnection
     /// </summary>
-    protected Task OnDisconnectedHookAsync() => Task.CompletedTask;
+    protected Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
 }
-
-// user id is not available
+// user id is not available in OnDisconnectedHook

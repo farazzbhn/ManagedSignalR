@@ -26,7 +26,7 @@ public sealed class ManagedHubHandlerBus
         // inject the list of registered handlers e.g., ICommandHandler<Request, Response>
         var handlers = (IEnumerable<object>)_serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(handlerType));
 
-        if (handlers == null) throw new MissingHandlerException(command.GetType());
+        if (handlers == null) throw new ServiceNotRegisteredException(command.GetType());
 
         foreach (var handler in handlers)
         {
