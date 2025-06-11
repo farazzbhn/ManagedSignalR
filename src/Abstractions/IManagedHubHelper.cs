@@ -1,14 +1,8 @@
 ﻿namespace ManagedLib.ManagedSignalR.Abstractions;
 public interface IManagedHubHelper
 {
+    public Task<int> InvokeClientAsync<THub>(object message, string userId) where THub : ManagedHub;
+    public Task<int> InvokeClientAsync<THub>(object message, string[] connectionIds) where THub : ManagedHub;
+    public Task<string[]> GetConnectionIds(string userId);
 
-    /// <summary>
-    /// Oon each connection 
-    /// </summary>
-    /// <typeparam name="THub"></typeparam>
-    /// <typeparam name="TMessage"></typeparam>
-    /// <param name="userId"></param>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    public Task<int> InvokeClientAsync<THub, TMessage>(string userId, TMessage message) where THub : ManagedHub;
 }

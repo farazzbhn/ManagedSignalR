@@ -8,12 +8,12 @@ namespace ManagedSignalRExample.Handlers;
 public class NewMessageHandler : IManagedHubHandler<NewMessage>
 {
 
-    private readonly ManagedHubHelper<ApplicationHub> _hubHelper;
+    private readonly ManagedHubHelper<ChatHub> _hubHelper;
     private readonly IIdentityProvider _identityProvider;
 
     public NewMessageHandler
     (
-        ManagedHubHelper<ApplicationHub> hubHelper, 
+        ManagedHubHelper<ChatHub> hubHelper, 
         IIdentityProvider identityProvider
     )
     {

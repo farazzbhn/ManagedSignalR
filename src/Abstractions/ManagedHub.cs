@@ -178,11 +178,10 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <summary>
     /// Empty hook &amp; Override to add custom logic on connection
     /// </summary>
-    protected Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+    protected virtual Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
     /// Empty hook &amp; Override to add custom logic on disconnection
     /// </summary>
-    protected Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+    protected virtual Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
 }
-// user id is not available in OnDisconnectedHook
