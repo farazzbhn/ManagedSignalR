@@ -313,15 +313,4 @@ internal class HubManager : IHubManager
         public DateTime ExpiresAt { get; set; }
     }
 
-
-
-
-
-
-
-
-
-
-
-
 }
