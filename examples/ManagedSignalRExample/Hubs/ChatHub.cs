@@ -10,13 +10,13 @@ public class ChatHub : ManagedHub
 
     public ChatHub
     (
-        GlobalSettings settings,
+        GlobalConfiguration configuration,
         ManagedHubHandlerBus bus,
         ILogger<ManagedHub> logger,
         ICacheProvider cacheProvider,
         ILockProvider lockProvider,
         IManagedHubHelper helper
-    ) : base(settings, bus, logger, cacheProvider, lockProvider)
+    ) : base(configuration, bus, logger, cacheProvider, lockProvider)
     {
         _helper = helper;
     }

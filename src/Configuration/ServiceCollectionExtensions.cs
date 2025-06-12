@@ -18,11 +18,11 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<GlobalSettings> configurer
+        Action<GlobalConfiguration> configurer
     )
     {
         // Create and configure the hub configuration
-        var configuration = new GlobalSettings(services);
+        var configuration = new GlobalConfiguration(services);
 
         configurer.Invoke(configuration);
 

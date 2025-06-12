@@ -38,7 +38,7 @@ public sealed class ManagedHubConfiguration
     /// <summary>
     /// Maps outgoing message types to topics and serializers
     /// </summary>
-    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> Client { get; set; } = new();
+    internal Dictionary<Type, (string Topic, Func<object, string> Serializer)> Outbound { get; set; } = new();
 
 
     /// <summary>
@@ -59,7 +59,7 @@ public sealed class ManagedHubConfiguration
 
         // and store 
 
-        Client[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
+        Outbound[typeof(T)] = (configuration.Topic, obj => configuration.Serializer((T)obj));
 
         return this;
     }

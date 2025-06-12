@@ -7,13 +7,13 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// <summary>
 /// Central configuration for SignalR hubs and their message mappings
 /// </summary>
-public class GlobalSettings
+public class GlobalConfiguration
 {
     internal List<ManagedHubConfiguration> Configurations { get; }
 
     private readonly IServiceCollection _services;
 
-    public GlobalSettings
+    public GlobalConfiguration
     (
         IServiceCollection services
     )

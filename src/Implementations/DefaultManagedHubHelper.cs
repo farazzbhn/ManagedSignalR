@@ -12,34 +12,34 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
     private readonly IServiceProvider _serviceProvider;
     private readonly ICacheProvider _cacheProvider;
     private readonly ILogger<DefaultManagedHubHelper> _logger;
-    private readonly GlobalSettings _globalSettings;
+    private readonly GlobalConfiguration _globalConfiguration;
 
     public DefaultManagedHubHelper
     (
         IServiceProvider serviceProvider,
         ICacheProvider cacheProvider,
         ILogger<DefaultManagedHubHelper> logger,
-        GlobalSettings globalSettings
+        GlobalConfiguration globalConfiguration
     )
     {
         _serviceProvider = serviceProvider;
         _cacheProvider = cacheProvider;
         _logger = logger;
-        _globalSettings = globalSettings;
+        _globalConfiguration = globalConfiguration;
     }
 
-    public async Task<int> InvokeClientAsync<THub, TMessage>
+    public async Task<int> SendToUser<THub>
     (
-        string userId,
-        TMessage message
+        object message,
+        string userId
     ) where THub : ManagedHub
     {
         // Input validation
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentNullException(nameof(userId));
 
-        if (message == null)
-            throw new ArgumentNullException(nameof(userId));
+        if (message is null)
+            throw new ArgumentNullException(nameof(message));
 
 
         IHubContext<THub, IManagedHubClient>? context =
@@ -58,27 +58,18 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
         if (hubConnection == null || !hubConnection.ConnectionIds.Any())
             return 0;
 
-        // Get configuration
-        ManagedHubConfiguration? configuration = _globalSettings.FindConfiguration(typeof(THub));
 
-        if (configuration?.Client == null ||
-            !configuration.Client.TryGetValue(typeof(TMessage), out var bindings))
-        {
-            throw new MissingConfigurationException(
-                $"Configuration not found for {typeof(TMessage).Name} in {typeof(THub).Name}");
-        }
-
-        // Serialize => throws on failure
-        string serialized = bindings.Serializer(message);
+        (string Topic, string Serialized) mapping = Map<THub>(message);
 
 
         // Send to connections with individual error handling
         var sendTasks = new List<Task<bool>>();
 
+
         foreach (string connectionId in hubConnection.ConnectionIds)
         {
             sendTasks.Add(
-                SendToConnection(context, connectionId, bindings.Topic, serialized, userId));
+                SendFaraz(context, connectionId, mapping.Topic, mapping.Serialized, userId));
         }
 
         // Wait for all sends to complete
@@ -92,7 +83,38 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
     }
 
 
-    private async Task<bool> SendToConnection<THub>
+
+    private (string Topic, string Serialized) Map<THub>(object message)
+    {
+        ManagedHubConfiguration? configuration = _globalConfiguration.FindConfiguration(typeof(THub));
+
+        if (configuration?.Outbound == null ||
+            !configuration.Outbound.TryGetValue(message.GetType(), out var config))
+        {
+            throw new MissingConfigurationException(
+                $"Configuration not found for {message.GetType()} in {typeof(THub).Name}");
+        }
+
+        string topic = config.Topic;
+        string serialized = config.Serializer(message);
+
+        return new ValueTuple<string, string>(topic, serialized);
+    }
+
+
+
+
+    public Task<bool> SendToConnection<THub>(object message, string connectionId) where THub : ManagedHub
+    {
+
+    }
+
+
+
+
+
+
+    public async Task<bool> SendFaraz<THub>
     (
         IHubContext<THub, IManagedHubClient> context,
         string connectionId,

@@ -10,7 +10,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
 
-    private readonly GlobalSettings _settings;
+    private readonly GlobalConfiguration _configuration;
     private readonly ManagedHubHandlerBus _bus;
     private readonly ILogger<ManagedHub> _logger;
     private readonly ICacheProvider _cacheProvider;
@@ -18,14 +18,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
     protected ManagedHub
     (
-        GlobalSettings settings,
+        GlobalConfiguration configuration,
         ManagedHubHandlerBus bus,
         ILogger<ManagedHub> logger, 
         ICacheProvider cacheProvider,
         ILockProvider lockProvider
     )
     {
-        _settings = settings;
+        _configuration = configuration;
         _bus = bus;
         _logger = logger;
         _cacheProvider = cacheProvider;
@@ -163,7 +163,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <param name="message">Serialized message data</param>
     internal async Task InvokeServer(string topic, string message)
     {
-        ManagedHubConfiguration? configuration = _settings.FindConfiguration(this.GetType());
+        ManagedHubConfiguration? configuration = _configuration.FindConfiguration(this.GetType());
 
         if (configuration is null || !configuration.ReceiveConfig.TryGetValue(topic, out var bindings))
             throw new InvalidOperationException($"No handler configured for topic {topic}");
