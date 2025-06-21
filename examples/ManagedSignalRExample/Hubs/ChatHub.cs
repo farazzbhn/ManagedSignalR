@@ -6,33 +6,44 @@ using ManagedSignalRExample.Models;
 namespace ManagedSignalRExample.Hubs;
 public class ChatHub : ManagedHub
 {
-    private readonly IManagedHubHelper _helper;
+    private readonly IHubMediator _mediator;
 
     public ChatHub
     (
-        GlobalConfiguration configuration,
+        GlobalConfiguration configuration, 
         ManagedHubHandlerBus bus,
-        ILogger<ManagedHub> logger,
-        ICacheProvider cacheProvider,
-        ILockProvider lockProvider,
-        IManagedHubHelper helper
+        ILogger<ManagedHub> logger, 
+        ICacheProvider cacheProvider, 
+        ILockProvider lockProvider
     ) : base(configuration, bus, logger, cacheProvider, lockProvider)
     {
-        _helper = helper;
     }
 
     protected override async Task OnConnectedHookAsync(string userId, string connectionId)
     {
 
-        var alert = new Alert()
+        string[] ids = await _mediator.ListConnectionId<ChatHub>(userId);
+
+        if (ids.Length != 1)
         {
-            Content = "A new device has connected to your account. If this wasn't you, please take immediate action.",
-            ActionLabel = "Revoke Access",
-            ActionUrl = "https://yourapp.com/security/device"
-        };
+            
+            var alert = new Alert()
+            {
+                Content = "A new device has connected to your account. If this wasn't you, please take immediate action.",
+                ActionLabel = "Revoke Access",
+                ActionUrl = "https://yourapp.com/security/device"
+            };
 
+            foreach (string id in ids)
+            {
+                if (id != connectionId)
+                {
+                    var 
+                }
+            }
 
-        await _helper.InvokeClient<ChatHub>(alert, userId);
+        }
 
     }
+
 }

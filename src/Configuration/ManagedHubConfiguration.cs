@@ -46,7 +46,7 @@ public sealed class ManagedHubConfiguration
     /// </summary>
     /// <typeparam name="T">Message type to send</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfiguration ConfigReceiveOnClient<T>(Action<SendToClientConfiguration<T>> configurer)
+    public ManagedHubConfiguration OnInvokeClient<T>(Action<SendToClientConfiguration<T>> configurer)
     {
         
         var configuration = new SendToClientConfiguration<T>();
@@ -69,7 +69,7 @@ public sealed class ManagedHubConfiguration
     /// </summary>
     /// <typeparam name="TModel">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public ManagedHubConfiguration ConfigReceiveOnServer<TModel>(Action<ReceiveOnServerConfiguration<TModel>> configurer)
+    public ManagedHubConfiguration OnInvokeServer<TModel>(Action<ReceiveOnServerConfiguration<TModel>> configurer)
     {
 
         var configuration = new ReceiveOnServerConfiguration<TModel>();

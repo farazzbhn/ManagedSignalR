@@ -1,9 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Configuration;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using ManagedLib.ManagedSignalR.Exceptions;
-using ManagedLib.ManagedSignalR.Implementations;
-
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 

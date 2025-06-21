@@ -9,3 +9,10 @@ public class ManagedHubSession
     public string UserId { get; set; } = default!;
     public List<string> ConnectionIds { get; set; } = new();
 }
+
+
+public class ManagedHubConnection
+{
+    public string Owner { get; set; }
+    public string ConnectionId { get; set; }
+}

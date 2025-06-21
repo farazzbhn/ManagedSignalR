@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ManagedHubHandlerBus>();
 
         // Register the default cache provider
-        services.AddSingleton<ICacheProvider, DefaultCacheProvider>();
+        services.AddSingleton<ICacheProvider, SingleInstanceCacheProvider>();
         services.AddScoped<ILockProvider, DefaultLockProvider>();
 
         // Configure SignalR
@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register the managed hub helper
-        services.AddScoped<IManagedHubHelper, DefaultManagedHubHelper>();
+        services.AddScoped<IHubMediator, HubMediator>();
 
         return services;
     }
