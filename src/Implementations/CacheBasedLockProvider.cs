@@ -3,22 +3,21 @@
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 
-
 /// <summary>
 /// A distributed lock implementation which relies on the <see cref="ICacheProvider"/> to function
 /// </summary>
-internal class DefaultLockProvider : ILockProvider
+internal class CacheBasedLockProvider : ILockProvider
 {
     private readonly ICacheProvider _cacheProvider;
 
-    public DefaultLockProvider(ICacheProvider cacheProvider) 
+    public CacheBasedLockProvider(ICacheProvider cacheProvider) 
     {
         _cacheProvider = cacheProvider;
     }
 
 
     // prefixes the cache key to ensure uniqueness of teh key
-    private static string Prefix(string key) => $"{nameof(DefaultLockProvider)}:{key}";
+    private static string Prefix(string key) => $"{nameof(CacheBasedLockProvider)}:{key}";
 
 
     public async Task<string?> WaitAsync(string key, TimeSpan? timeout = null)

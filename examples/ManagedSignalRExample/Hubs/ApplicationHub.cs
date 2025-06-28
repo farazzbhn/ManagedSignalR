@@ -1,21 +1,22 @@
 ﻿using ManagedLib.ManagedSignalR;
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
-public class ChatHub : ManagedHub
+public class ApplicationHub : ManagedHub
 {
-    private readonly IManagedHubHelper _helper;
+    private readonly ManagedHubHelper _helper;
 
-    public ChatHub
+    public ApplicationHub
     (
         GlobalConfiguration configuration,
         ManagedHubHandlerBus bus,
         ILogger<ManagedHub> logger,
         ICacheProvider cacheProvider,
         ILockProvider lockProvider,
-        IManagedHubHelper helper
+        ManagedHubHelper helper
     ) : base(configuration, bus, logger, cacheProvider, lockProvider)
     {
         _helper = helper;
@@ -31,8 +32,17 @@ public class ChatHub : ManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
+        // retrieve the session for the user 
+        ManagedHubSession session = await _helper.GetSession(userId);
 
-        await _helper.InvokeClient<ChatHub>(alert, userId);
+        // send the alert to every other connection of the user
 
+        foreach (var connection in session.Connections)
+        {
+            if (connection.ConnectionId != connectionId)
+            {
+                await _helper.SendToConnectionId<ApplicationHub>(connection.ConnectionId, alert, userId);
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Hubs;
 using ManagedSignalRExample.Models;
 using Microsoft.AspNetCore.SignalR;
@@ -8,12 +9,12 @@ namespace ManagedSignalRExample.Handlers;
 public class NewMessageHandler : IManagedHubHandler<NewMessage>
 {
 
-    private readonly ManagedHubHelper<ChatHub> _hubHelper;
+    private readonly ManagedHubHelper hubHelper;
     private readonly IIdentityProvider _identityProvider;
 
     public NewMessageHandler
     (
-        ManagedHubHelper<ChatHub> hubHelper, 
+        ManagedHubHelper<ApplicationHub> 00sssbHelper, 
         IIdentityProvider identityProvider
     )
     {

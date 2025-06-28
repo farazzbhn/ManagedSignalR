@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddManagedSignalR(config =>
 {
-    config.AddHub<ChatHub>()
+    config.AddHub<ApplicationHub>()
 
         .ConfigReceiveOnClient<Message>(cfg =>
             cfg

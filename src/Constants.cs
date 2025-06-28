@@ -8,6 +8,7 @@ namespace ManagedLib.ManagedSignalR
 {
     public static class Constants
     {
-        public const string Anonymous = "anonymous";
+        public const string Anonymous = "anon";
+        public static string InstanceId = Guid.NewGuid().ToString("N");
     }
 }

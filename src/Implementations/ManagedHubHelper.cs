@@ -7,18 +7,18 @@ using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
-internal class DefaultManagedHubHelper : IManagedHubHelper
+public class ManagedHubHelper 
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ICacheProvider _cacheProvider;
-    private readonly ILogger<DefaultManagedHubHelper> _logger;
+    private readonly ILogger<ManagedHubHelper> _logger;
     private readonly GlobalConfiguration _globalConfiguration;
 
-    public DefaultManagedHubHelper
+    public ManagedHubHelper
     (
         IServiceProvider serviceProvider,
         ICacheProvider cacheProvider,
-        ILogger<DefaultManagedHubHelper> logger,
+        ILogger<ManagedHubHelper> logger,
         GlobalConfiguration globalConfiguration
     )
     {
@@ -66,7 +66,7 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
         var sendTasks = new List<Task<bool>>();
 
 
-        foreach (string connectionId in hubConnection.ConnectionIds)
+        foreach (string connectionId in hubConnection.Connections.Select())
         {
             sendTasks.Add(
                 SendFaraz(context, connectionId, mapping.Topic, mapping.Serialized, userId));
@@ -81,6 +81,8 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
 
         return sent;
     }
+
+
 
 
 
@@ -100,15 +102,6 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
 
         return new ValueTuple<string, string>(topic, serialized);
     }
-
-
-
-
-    public Task<bool> SendToConnection<THub>(object message, string connectionId) where THub : ManagedHub
-    {
-
-    }
-
 
 
 
@@ -139,5 +132,11 @@ internal class DefaultManagedHubHelper : IManagedHubHelper
 
             return false;
         }
+    }
+
+    public async Task<ManagedHubSession> GetSession(string userId)
+    {
+        ManagedHubSession? session = await _cacheProvider.GetAsync<ManagedHubSession>(userId);
+        return session;
     }
 }

@@ -68,11 +68,12 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
                 session = new ManagedHubSession
                 {
                     UserId = userId,
-                    ConnectionIds = new List<string>()
+                    Connections = new ()
                 };
             }
 
-            session.ConnectionIds.Add(Context.ConnectionId);
+            var connection = new Connection(Constants.InstanceId, Context.ConnectionId);
+            session.Connections.Add(connection);
             await _cacheProvider.SetAsync(userId, session);
         }
         // Failed to cache the updated object => Log, abort, and return.
@@ -180,6 +181,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// </summary>
     protected virtual Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
+    ///<summary>
     /// Empty hook &amp; Override to add custom logic on disconnection
     /// </summary>
     protected virtual Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
