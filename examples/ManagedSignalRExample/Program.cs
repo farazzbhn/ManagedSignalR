@@ -14,16 +14,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-builder.Services.AddManagedSignalR(config =>
+builder.Services.AddManagedSignalR(builder =>
 {
-    config.AddHub<ApplicationHub>()
+    builder.AddHub<ApplicationHub>()
 
-        .ConfigReceiveOnClient<Message>(cfg =>
+        .OnInvokeClient<Message>(cfg =>
             cfg
                 .BindTopic("msg")
                 .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-        .ConfigReceiveOnServer<Coordinates>(cfg =>
+        .OnInvokeServer<Coordinates>(cfg =>
             cfg
                 .BindTopic("loc")
                 // coordinates are sent as "lat,long" string 
@@ -38,7 +38,7 @@ builder.Services.AddManagedSignalR(config =>
                 })
                 .UseHandler<CoordinatesHandler>())
 
-        .ConfigReceiveOnServer<NewMessage>(cfg =>
+        .OnInvokeServer<NewMessage>(cfg =>
             cfg
                 .BindTopic("msg")
                 // Not invoking the UseDeserializer method here means that the incoming message

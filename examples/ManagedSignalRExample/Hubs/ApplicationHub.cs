@@ -11,7 +11,7 @@ public class ApplicationHub : ManagedHub
 
     public ApplicationHub
     (
-        GlobalConfiguration configuration,
+        ManagedSignalRBuilder configuration,
         ManagedHubHandlerBus bus,
         ILogger<ManagedHub> logger,
         ICacheProvider cacheProvider,

@@ -13,18 +13,18 @@ public static class ServiceCollectionExtensions
     /// Adds and configures SignalR services with managed connection handling
     /// </summary>
     /// <param name="services">Service collection to configure</param>
-    /// <param name="configurer">Configuration builder</param>
+    /// <param name="builder">Configuration builder</param>
     /// <returns>Configured service collection</returns>
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<GlobalConfiguration> configurer
+        Action<ManagedSignalRBuilder> builder
     )
     {
         // Create and configure the hub configuration
-        var configuration = new GlobalConfiguration(services);
+        var configuration = new ManagedSignalRBuilder(services);
 
-        configurer.Invoke(configuration);
+        builder.Invoke(configuration);
 
         // Register core services
         services.AddSingleton(configuration);
