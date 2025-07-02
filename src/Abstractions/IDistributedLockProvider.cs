@@ -5,9 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
-public interface ILockProvider
+public interface IDistributedLockProvider
 {
-
     /// <summary>
     /// Attempts to acquire a lock on the specified key.
     /// </summary>

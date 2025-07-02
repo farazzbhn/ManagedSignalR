@@ -7,7 +7,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 /// Handler for processing specific command types
 /// </summary>
 /// <typeparam name="TCommand">Command type to handle</typeparam>
-public interface IManagedHubHandler<in TCommand> 
+public interface IManagedHubHandler<in TCommand>
 {
     /// <summary>
     /// Handles the specified command asynchronously in a <b>fire &amp; forget </b>manner
@@ -15,4 +15,5 @@ public interface IManagedHubHandler<in TCommand>
     /// <param name="request">Command to process</param>
     /// <param name="context">SignalR connection context</param>
     Task Handle(TCommand request, HubCallerContext context);
+
 }

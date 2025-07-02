@@ -2,14 +2,14 @@
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
-public abstract class InvokeServerConfiguration
+public abstract class InvokeServerMapping
 {
     internal string Topic { get; set; }
-    internal Type HandlerType { get; set; }
+    internal Type? HandlerType { get; set; }
     internal abstract dynamic Deserialize(string payload);
 }
 
-public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguration
+public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
 {
     internal Func<string, TModel> Deserializer { get; private set; } = message => System.Text.Json.JsonSerializer.Deserialize<TModel>(message)!;
     internal override dynamic Deserialize(string payload) => Deserializer(payload)!;
@@ -18,7 +18,7 @@ public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguratio
     /// <b>Required</b> —
     /// Sets the topic for incoming messages
     /// </summary>
-    public InvokeServerConfiguration<TModel> BindTopic(string topic)
+    public InvokeServerMapping<TModel> FromTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -28,7 +28,7 @@ public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguratio
     /// <b>Optional</b> —
     /// Overrides the default <see cref="System.Text.Json.JsonSerializer"/> 
     /// </summary>
-    public InvokeServerConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
+    public InvokeServerMapping<TModel> UseDeserializer(Func<string, TModel> deserializer)
     {
         this.Deserializer = deserializer;
         return this;
@@ -37,7 +37,7 @@ public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguratio
     /// <summary>
     /// <b>Required</b> | Sets the handler type for processing messages 
     /// </summary>
-    public InvokeServerConfiguration<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
+    public InvokeServerMapping<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
     {
         HandlerType = typeof(THandler);
         return this;

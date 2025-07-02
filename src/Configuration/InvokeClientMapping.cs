@@ -1,12 +1,12 @@
 ﻿namespace ManagedLib.ManagedSignalR.Configuration;
-public abstract class InvokeClientConfiguration
+public abstract class InvokeClientMapping
 {
     internal string Topic { get; set; }
     internal abstract string Serialize(dynamic obj);
 }
 
 
-public sealed class InvokeClientConfiguration<TModel> : InvokeClientConfiguration
+public sealed class InvokeClientMapping<TModel> : InvokeClientMapping
 {
     internal Func<TModel, string> Serializer { get; private set; } = message => System.Text.Json.JsonSerializer.Serialize(message);
     internal override string Serialize(dynamic obj) => Serializer(obj);
@@ -16,7 +16,7 @@ public sealed class InvokeClientConfiguration<TModel> : InvokeClientConfiguratio
     /// Sets the topic name used when invoking <see cref="IManagedHubClient.InvokeClient"/> 
     /// during the publishing process for this configuration.
     /// </summary>
-    public InvokeClientConfiguration<TModel> BindTopic(string topic)
+    public InvokeClientMapping<TModel> RouteToTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -27,7 +27,7 @@ public sealed class InvokeClientConfiguration<TModel> : InvokeClientConfiguratio
     /// <b>Optional</b> —
     /// Overrides the default <see cref="System.Text.Json.JsonSerializer"/> 
     /// </summary>
-    public InvokeClientConfiguration<TModel> UseSerializer(Func<TModel, string> serializer)
+    public InvokeClientMapping<TModel> UseSerializer(Func<TModel, string> serializer)
     {
         Serializer = serializer;
         return this;
