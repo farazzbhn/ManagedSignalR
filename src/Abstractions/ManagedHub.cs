@@ -7,26 +7,26 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
 
-    private readonly GlobalConfiguration _configuration;
+    private readonly ManagedSignalRConfiguration _configuration;
     private readonly ManagedHubHandlerBus _bus;
     private readonly ILogger<ManagedHub> _logger;
-    private readonly ICacheProvider _cacheProvider;
-    private readonly ILockProvider _lockProvider;
+    private readonly IDistributedCacheProvider _disributedCacheProvider;
+    private readonly IDistributedLockProvider _distributedLockProvider;
 
     protected ManagedHub
     (
-        GlobalConfiguration configuration,
+        ManagedSignalRConfiguration configuration,
         ManagedHubHandlerBus bus,
         ILogger<ManagedHub> logger, 
-        ICacheProvider cacheProvider,
-        ILockProvider lockProvider
+        IDistributedCacheProvider distributedCache,
+        IDistributedLockProvider distributedLockProvider
     )
     {
         _configuration = configuration;
         _bus = bus;
         _logger = logger;
-        _cacheProvider = cacheProvider;
-        _lockProvider = lockProvider;
+        _disributedCacheProvider = distributedCache;
+        _distributedLockProvider = distributedLockProvider;
     }
 
 
@@ -43,7 +43,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         string connectionId = Context.ConnectionId;
 
         // Attempt to acquire a distributed ity lock. 
-        string? token = await _lockProvider.WaitAsync(userId);
+        string? token = await _distributedLockProvider.WaitAsync(userId);
 
 
         // Failed to acquire the distributed lock => Abort & return
@@ -58,19 +58,20 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         try
         {
             // retrieve the cached list of connections associated with the user
-            var session = await _cacheProvider.GetAsync<ManagedHubSession>(userId);
+            var session = await _disributedCacheProvider.GetAsync<ManagedHubSession>(userId);
 
             if (session == null)
             {
                 session = new ManagedHubSession
                 {
                     UserId = userId,
-                    ConnectionIds = new List<string>()
+                    Connections = new ()
                 };
             }
 
-            session.ConnectionIds.Add(Context.ConnectionId);
-            await _cacheProvider.SetAsync(userId, session);
+            var connection = new Connection(Constants.InstanceId, Context.ConnectionId);
+            session.Connections.Add(connection);
+            await _disributedCacheProvider.SetAsync(userId, session);
         }
         // Failed to cache the updated object => Log, abort, and return.
         catch (Exception ex)    // Log & Abort
@@ -83,7 +84,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         // Release the distributed lock
         finally
         {
-            await _lockProvider.ReleaseAsync(userId, token);
+            await _distributedLockProvider.ReleaseAsync(userId, token);
         }
 
         // Invoke the hook
@@ -104,7 +105,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
 
         // Attempt to acquire a distributed ity lock. 
-        string? token = await _lockProvider.WaitAsync(userId);
+        string? token = await _distributedLockProvider.WaitAsync(userId);
 
 
         // Failed to acquire the distributed lock => Abort & return
@@ -116,17 +117,20 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         
         try
         {
-            var session = await _cacheProvider.GetAsync<ManagedHubSession>(userId);
+            var session = await _disributedCacheProvider.GetAsync<ManagedHubSession>(userId);
 
             // connection id not found
-            if (session == null || !session.ConnectionIds.Any())
+            if (session == null || !session.Connections.Any())
             {
                 _logger.LogError("Failed to remove/cache connection for user {UserId}", userId);
                 return;
             }
 
             // remove the connection id 
-            bool removed = session!.ConnectionIds.Remove(connectionId);
+            Connection? connection = session.Connections.FirstOrDefault(c => c.ConnectionId == connectionId);
+
+
+            bool removed = connection is not null && session!.Connections.Remove(connection) ;
 
             // cannot remove (
             if (!removed)
@@ -136,22 +140,35 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             }
 
             // check if the user has any other questions and if not proceed to de-cache the session
-            if (session.ConnectionIds.Count == 0)
+            if (session.Connections.Count == 0)
             {
-                await _cacheProvider.RemoveAsync(userId);
+                await _disributedCacheProvider.RemoveAsync(userId);
                 return;
             }
 
             // Update the ManagedHubSession if other active connections are found
-            await _cacheProvider.SetAsync(userId, session);
+            await _disributedCacheProvider.SetAsync(userId, session);
 
         }
         finally
         {
-            await _lockProvider.ReleaseAsync(userId, token);
+            await _distributedLockProvider.ReleaseAsync(userId, token);
         }
 
     }
+
+
+    /// <summary>
+    /// Empty hook -- Override to implement custom logic on connection
+    /// </summary>
+    protected virtual Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+
+    ///<summary>
+    /// Empty hook -- Override to implement custom logic on disconnection
+    /// </summary>
+    protected virtual Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+
+
 
     /// <summary>
     /// Invoked by the client, the method processes incoming messages and routes them to handlers
@@ -160,25 +177,13 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <param name="message">Serialized message data</param>
     internal async Task InvokeServer(string topic, string message)
     {
-        ManagedHubConfiguration? configuration = _configuration.FindConfiguration(this.GetType());
-
-        if (configuration is null || !configuration.ReceiveConfig.TryGetValue(topic, out var bindings))
-            throw new InvalidOperationException($"No handler configured for topic {topic}");
+        HubEndpointConfiguration configuration = _configuration.GetConfiguration(this.GetType());
 
         // Deserialize using configured deserializer
-        var deserializedMessage = bindings.Deserializer(message);
+        dynamic command = configuration.Deserialize(topic, message);
 
         // Dispatch to the registered handler
-        await _bus.Handle(deserializedMessage, Context);
+        await _bus.Handle(command, Context);
     }
-
-    /// <summary>
-    /// Empty hook &amp; Override to add custom logic on connection
-    /// </summary>
-    protected virtual Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
-
-    /// Empty hook &amp; Override to add custom logic on disconnection
-    /// </summary>
-    protected virtual Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
 
 }

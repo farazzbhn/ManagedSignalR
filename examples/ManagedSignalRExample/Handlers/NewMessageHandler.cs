@@ -8,18 +8,15 @@ namespace ManagedSignalRExample.Handlers;
 public class NewMessageHandler : IManagedHubHandler<NewMessage>
 {
 
-    private readonly ManagedHubHelper<ChatHub> _hubHelper;
-    private readonly IIdentityProvider _identityProvider;
+    private readonly ManagedHubHelper hubHelper;
 
     public NewMessageHandler
     (
-        ManagedHubHelper<ChatHub> hubHelper, 
-        IIdentityProvider identityProvider
+        ManagedHubHelper<ApplicationHub> sssbHelper, 
     )
     {
         _hubHelper = hubHelper;
         _identityProvider = identityProvider;
-    }
 
     public async Task Handle(NewMessage request, HubCallerContext context)
     {
@@ -34,5 +31,10 @@ public class NewMessageHandler : IManagedHubHandler<NewMessage>
         };
 
         await _hubHelper.PushToClient(userId, msg);
+    }
+
+    public Task Handle<TModel>(TModel request, HubCallerContext context)
+    {
+        throw new NotImplementedException();
     }
 }

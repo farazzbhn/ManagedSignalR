@@ -14,18 +14,18 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-builder.Services.AddManagedSignalR(config =>
+builder.Services.AddManagedSignalR(builder =>
 {
-    config.AddHub<ChatHub>()
+    builder.AddHub<ApplicationHub>()
 
-        .OnInvokeClient<Message>(cfg =>
+        .ConfigureInvokeClient<Message>(cfg =>
             cfg
-                .BindTopic("msg")
+                .RouteToTopic("msg")
                 .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-        .OnInvokeServer<Coordinates>(cfg =>
+        .ConfigureInvokeServer<Coordinates>(cfg =>
             cfg
-                .BindTopic("loc")
+                .FromTopic("loc")
                 // coordinates are sent as "lat,long" string 
                 .UseDeserializer(str =>
                 {
@@ -38,12 +38,12 @@ builder.Services.AddManagedSignalR(config =>
                 })
                 .UseHandler<CoordinatesHandler>())
 
-        .OnInvokeServer<NewMessage>(cfg =>
+        .ConfigureInvokeServer<NewMessage>(cfg =>
             cfg
-                .BindTopic("msg")
+                .FromTopic("msg")
                 // Not invoking the UseDeserializer method here means that the incoming message
                 // will be deserialized using the default JSON deserializer.
-                //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<IncomingMessage>(str))
+                //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<NewMessage>(str))
                 .UseHandler<NewMessageHandler>());
 
 });

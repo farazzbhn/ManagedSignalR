@@ -1,35 +1,35 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
-using Microsoft.VisualBasic;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Thread-safe in-memory implementation of <see cref="ICacheProvider"/> using ConcurrentDictionary.
+/// Thread-safe in-memory implementation of <see cref="IDistributedCacheProvider"/> using ConcurrentDictionary.
 /// This is the default implementation suitable for single-server scenarios.
 /// For distributed systems, consider implementing a distributed cache provider and mind the uniqueness of the key
 /// </summary>
-public class InMemoryCacheProvider : ICacheProvider
+public class InMemoryCacheProvider : IDistributedCacheProvider
 {
-    private readonly ConcurrentDictionary<string, object> _cache = new();
+    private static readonly ConcurrentDictionary<string, object> s_cache = new();
 
-    public async Task<T?> GetAsync<T>(string key) where T : class
+    public Task<T?> GetAsync<T>(string key) where T : class
     {
-        if (_cache.TryGetValue(key, out var value))
+        if (s_cache.TryGetValue(key, out var value))
         {
-            return value as T;
+            return Task.FromResult(value as T);
         }
-        return null;
+        return Task.FromResult<T?>(null);
     }
 
-    public async Task SetAsync<T>(string key, T value) where T : class
+    public Task SetAsync<T>(string key, T value) where T : class
     {
-        _cache[key] = value;
+        s_cache[key] = value;
+        return Task.CompletedTask;
     }
-    
-    public async Task<bool> RemoveAsync(string key)
+
+    public Task<bool> RemoveAsync(string key)
     {
-        return _cache.TryRemove(key, out _);
+        return Task.FromResult(s_cache.TryRemove(key, out _));
     }
 }
