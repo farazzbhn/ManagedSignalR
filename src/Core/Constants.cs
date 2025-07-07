@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ManagedLib.ManagedSignalR
+﻿namespace ManagedLib.ManagedSignalR.Core
 {
     public static class Constants
     {
         public const string Anonymous = "anon";
+        public const string Prefix = "msr:";
         public static string InstanceId = Guid.NewGuid().ToString("N");
     }
 }

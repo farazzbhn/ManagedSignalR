@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 namespace ManagedLib.ManagedSignalR.Types;
 public record Envelope
 {
-    public string InstanceId { get; set; }
     public string ConnectionId { get; set; }
     public string Topic { get; set; }
     public string Payload { get; set; }

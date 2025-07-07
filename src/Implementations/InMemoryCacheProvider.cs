@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedLib.ManagedSignalR.Types;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 

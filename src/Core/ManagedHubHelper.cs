@@ -14,7 +14,7 @@ public class ManagedHubHelper
     private readonly IDistributedCacheProvider _cache;
     private readonly ILogger<ManagedHubHelper> _logger;
     private readonly ManagedSignalRConfiguration _configuration;
-    private readonly IPublisher _publisher;
+    private readonly IPublishEndpoint _publisher;
 
     public ManagedHubHelper
     (
@@ -22,7 +22,7 @@ public class ManagedHubHelper
         IDistributedCacheProvider cache,
         ILogger<ManagedHubHelper> logger,
         ManagedSignalRConfiguration configuration, 
-        IPublisher publisher
+        IPublishEndpoint publisher
     )
     {
         _serviceProvider = serviceProvider;

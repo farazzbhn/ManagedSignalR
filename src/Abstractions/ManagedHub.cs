@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
