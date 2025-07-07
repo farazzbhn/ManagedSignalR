@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ManagedLib.ManagedSignalR.Exceptions;
+namespace ManagedLib.ManagedSignalR.Types.Exceptions;
 
 public class MissingConfigurationException : Exception
 {

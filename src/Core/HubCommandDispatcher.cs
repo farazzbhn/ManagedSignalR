@@ -1,14 +1,14 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedLib.ManagedSignalR.Exceptions;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR;
 
-public sealed class ManagedHubHandlerBus 
+public sealed class HubCommandDispatcher 
 {
     private readonly IServiceProvider _serviceProvider;
 
-    public ManagedHubHandlerBus(IServiceProvider serviceProvider)
+    public HubCommandDispatcher(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -21,7 +21,7 @@ public sealed class ManagedHubHandlerBus
     public async Task Handle(dynamic command, HubCallerContext context)
     {
         // Determine the type (e.g., IPostHandler<Location>
-        Type handlerType = typeof(IManagedHubHandler<>).MakeGenericType(command.GetType());
+        Type handlerType = typeof(IHubCommandHandler<>).MakeGenericType(command.GetType());
         
         // inject the list of registered handlers e.g., ICommandHandler<Request, Response>
         var handlers = (IEnumerable<object>)_serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(handlerType));

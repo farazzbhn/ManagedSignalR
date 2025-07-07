@@ -13,26 +13,26 @@ public static class ServiceCollectionExtensions
     /// Adds and configures SignalR services with managed connection handling
     /// </summary>
     /// <param name="services">Service collection to configure</param>
-    /// <param name="builder">Configuration builder</param>
+    /// <param name="configurer">Configuration builder</param>
     /// <returns>Configured service collection</returns>
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<ManagedSignalRConfiguration> builder
+        Action<GlobalConfiguration> configurer
     )
     {
         // Create and configure the hub configuration
-        var configuration = new ManagedSignalRConfiguration(services);
+        var configuration = new GlobalConfiguration(services);
 
-        builder.Invoke(configuration);
+        configurer.Invoke(configuration);
 
         // Register core services
         services.AddSingleton(configuration);
-        services.AddSingleton<ManagedHubHandlerBus>();
+        services.AddSingleton<HubCommandDispatcher>();
 
         // Register the default cache provider
-        services.AddSingleton<IDistributedCacheProvider, InMemoryCacheProvider>();
-        services.AddScoped<IDistributedLockProvider, DistributedLockProvider>();
+        services.AddSingleton<ICacheProvider, SingleInstanceCacheProvider>();
+        services.AddScoped<ILockProvider, DefaultLockProvider>();
 
         // Configure SignalR
         services.AddSignalR(options =>
@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register the managed hub helper
-        services.AddScoped<ManagedHubHelper>();
+        services.AddScoped<IManagedHubHelper, HubMediator>();
 
         return services;
     }

@@ -37,7 +37,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// <summary>
     /// <b>Required</b> | Sets the handler type for processing messages 
     /// </summary>
-    public InvokeServerMapping<TModel> UseHandler<THandler>() where THandler : IManagedHubHandler<TModel>
+    public InvokeServerMapping<TModel> UseHandler<THandler>() where THandler : IHubCommandHandler<TModel>
     {
         HandlerType = typeof(THandler);
         return this;
@@ -50,7 +50,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
             throw new InvalidOperationException($"Topic not set for type {typeof(TModel).Name}");
 
         if (HandlerType == null)
-            throw new InvalidOperationException($"IManagedHubHandler not specified for type {typeof(TModel).Name}");
+            throw new InvalidOperationException($"IHubCommandHandler not specified for type {typeof(TModel).Name}");
     }
 
 }

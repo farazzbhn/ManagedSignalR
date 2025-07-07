@@ -1,6 +1,8 @@
 ﻿using ManagedLib.ManagedSignalR;
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Implementations;
+using ManagedLib.ManagedSignalR.Types;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
@@ -11,12 +13,12 @@ public class ApplicationHub : ManagedHub
     public ApplicationHub
     (
         ManagedSignalRConfiguration configuration,
-        ManagedHubHandlerBus bus,
+        HubCommandDispatcher bus,
         ILogger<ManagedHub> logger,
-        IDistributedCacheProvider distributedCache,
-        IDistributedLockProvider distributedLockProvider,
+        IDistributedCacheProvider _cache,
+        IDistributedLockProvider _lock,
         ManagedHubHelper helper
-    ) : base(configuration, bus, logger, distributedCache, distributedLockProvider)
+    ) : base(configuration, bus, logger, _cache, _lock)
     {
         _helper = helper;
     }

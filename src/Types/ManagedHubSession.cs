@@ -1,4 +1,4 @@
-﻿namespace ManagedLib.ManagedSignalR.Abstractions;
+﻿namespace ManagedLib.ManagedSignalR.Types;
 
 
 /// <summary>

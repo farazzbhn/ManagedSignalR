@@ -1,4 +1,6 @@
-﻿namespace ManagedLib.ManagedSignalR.Abstractions;
+﻿using ManagedLib.ManagedSignalR.Types;
+
+namespace ManagedLib.ManagedSignalR.Abstractions;
 
 /// <summary>
 /// Thread-safe cache for storing SignalR connection data
@@ -12,7 +14,7 @@ public interface IDistributedCacheProvider
     /// <typeparam name="T">Value type</typeparam>
     /// <param name="key">Cache key</param>
     /// <returns>Cached value or null if non-existent</returns>
-    Task<T?> GetAsync<T>(string key) where T : class;
+    Task<T> GetAsync<T>(string key) where T : class;
 
     /// <summary>
     /// Stores a value in cache <br />

@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Types;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 namespace ManagedLib.ManagedSignalR.Abstractions;
@@ -8,25 +9,25 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 {
 
     private readonly ManagedSignalRConfiguration _configuration;
-    private readonly ManagedHubHandlerBus _bus;
+    private readonly HubCommandDispatcher _dispatcher;
     private readonly ILogger<ManagedHub> _logger;
-    private readonly IDistributedCacheProvider _disributedCacheProvider;
-    private readonly IDistributedLockProvider _distributedLockProvider;
+    private readonly IDistributedCacheProvider _cache;
+    private readonly IDistributedLockProvider _lockProvider;
 
     protected ManagedHub
     (
         ManagedSignalRConfiguration configuration,
-        ManagedHubHandlerBus bus,
+        HubCommandDispatcher dispatcher,
         ILogger<ManagedHub> logger, 
-        IDistributedCacheProvider distributedCache,
-        IDistributedLockProvider distributedLockProvider
+        IDistributedCacheProvider cache,
+        IDistributedLockProvider lockProvider
     )
     {
         _configuration = configuration;
-        _bus = bus;
+        _dispatcher = dispatcher;
         _logger = logger;
-        _disributedCacheProvider = distributedCache;
-        _distributedLockProvider = distributedLockProvider;
+        _cache = cache;
+        _lockProvider = lockProvider;
     }
 
 
@@ -42,11 +43,11 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         string userId = Context.UserIdentifier ?? Constants.Anonymous;
         string connectionId = Context.ConnectionId;
 
-        // Attempt to acquire a distributed ity lock. 
-        string? token = await _distributedLockProvider.WaitAsync(userId);
+        // Attempt to acquire a distributed ity lockProvider. 
+        string? token = await _lockProvider.WaitAsync(userId);
 
 
-        // Failed to acquire the distributed lock => Abort & return
+        // Failed to acquire the distributed lockProvider => Abort & return
         if (token is null)      
         {
             _logger.LogError("Failed to acquire lock for {UserId}", userId);
@@ -58,7 +59,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         try
         {
             // retrieve the cached list of connections associated with the user
-            var session = await _disributedCacheProvider.GetAsync<ManagedHubSession>(userId);
+            var session = await _cache.GetAsync<ManagedHubSession>(userId);
 
             if (session == null)
             {
@@ -71,7 +72,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             var connection = new Connection(Constants.InstanceId, Context.ConnectionId);
             session.Connections.Add(connection);
-            await _disributedCacheProvider.SetAsync(userId, session);
+            await _cache.SetAsync(userId, session);
         }
         // Failed to cache the updated object => Log, abort, and return.
         catch (Exception ex)    // Log & Abort
@@ -81,14 +82,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             return;
         }
 
-        // Release the distributed lock
+        // Release the distributed lockProvider
         finally
         {
-            await _distributedLockProvider.ReleaseAsync(userId, token);
+            await _lockProvider.ReleaseAsync(userId, token);
         }
 
         // Invoke the hook
-        await OnConnectedHookAsync(userId, connectionId);
+        await OnConnectedHookAsync();
     }
 
 
@@ -101,23 +102,23 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         var userId = Context.UserIdentifier ?? Constants.Anonymous;
         var connectionId = Context.ConnectionId;
 
-        await OnDisconnectedHookAsync(userId, connectionId);
+        await OnDisconnectedHookAsync();
 
 
-        // Attempt to acquire a distributed ity lock. 
-        string? token = await _distributedLockProvider.WaitAsync(userId);
+        // Attempt to acquire a distributed ity lockProvider. 
+        string? token = await _lockProvider.WaitAsync(userId);
 
 
-        // Failed to acquire the distributed lock => Abort & return
+        // Failed to acquire the distributed lockProvider => Abort & return
         if (token is null)
         {
-            _logger.LogError("Failed to acquire lock for {UserId}", userId);
+            _logger.LogError("Failed to acquire lockProvider for {UserId}", userId);
             return;
         }
         
         try
         {
-            var session = await _disributedCacheProvider.GetAsync<ManagedHubSession>(userId);
+            var session = await _cache.GetAsync<ManagedHubSession>(userId);
 
             // connection id not found
             if (session == null || !session.Connections.Any())
@@ -142,17 +143,17 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             // check if the user has any other questions and if not proceed to de-cache the session
             if (session.Connections.Count == 0)
             {
-                await _disributedCacheProvider.RemoveAsync(userId);
+                await _cache.RemoveAsync(userId);
                 return;
             }
 
             // Update the ManagedHubSession if other active connections are found
-            await _disributedCacheProvider.SetAsync(userId, session);
+            await _cache.SetAsync(userId, session);
 
         }
         finally
         {
-            await _distributedLockProvider.ReleaseAsync(userId, token);
+            await _lockProvider.ReleaseAsync(userId, token);
         }
 
     }
@@ -161,12 +162,12 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <summary>
     /// Empty hook -- Override to implement custom logic on connection
     /// </summary>
-    protected virtual Task OnConnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+    protected virtual Task OnConnectedHookAsync() => Task.CompletedTask;
 
     ///<summary>
     /// Empty hook -- Override to implement custom logic on disconnection
     /// </summary>
-    protected virtual Task OnDisconnectedHookAsync(string userId, string connectionId) => Task.CompletedTask;
+    protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
 
 
 
@@ -183,7 +184,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         dynamic command = configuration.Deserialize(topic, message);
 
         // Dispatch to the registered handler
-        await _bus.Handle(command, Context);
+        await _dispatcher.Handle(command, Context);
     }
 
 }

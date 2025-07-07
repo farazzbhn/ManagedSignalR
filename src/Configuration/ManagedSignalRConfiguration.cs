@@ -1,6 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedLib.ManagedSignalR.Exceptions;
 using ManagedLib.ManagedSignalR.Implementations;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Configuration;

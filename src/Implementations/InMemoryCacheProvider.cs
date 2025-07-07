@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Types;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
@@ -11,9 +11,9 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// </summary>
 public class InMemoryCacheProvider : IDistributedCacheProvider
 {
-    private static readonly ConcurrentDictionary<string, object> s_cache = new();
+    private static readonly ConcurrentDictionary<string, dynamic> s_cache = new();
 
-    public Task<T?> GetAsync<T>(string key) where T : class
+    public Task<T> GetAsync<T>(string key) where T : class
     {
         if (s_cache.TryGetValue(key, out var value))
         {

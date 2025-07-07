@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using ManagedLib.ManagedSignalR.Exceptions;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
@@ -21,6 +22,8 @@ public sealed class HubEndpointConfiguration
     {
         _services = services;
         HubType = hubType;
+        _inbound = new();
+        _outbound = new();
     }
 
 
@@ -30,10 +33,9 @@ public sealed class HubEndpointConfiguration
     internal Type HubType { get; set; }
 
 
-    private Dictionary<string, InvokeServerMapping> inbound { get ; set; } = new();
+    private Dictionary<string, InvokeServerMapping> _inbound { get ; set; } 
 
-
-    private Dictionary<Type, InvokeClientMapping> Outbound { get; set; } = new();
+    private Dictionary<Type, InvokeClientMapping> _outbound { get; set; } 
 
 
     /// <summary>
@@ -53,7 +55,7 @@ public sealed class HubEndpointConfiguration
 
 
         // a C# type is bound to a topic/serializer
-        Outbound[typeof(T)] = configuration;
+        _outbound[typeof(T)] = configuration;
 
         return this;
     }
@@ -63,7 +65,7 @@ public sealed class HubEndpointConfiguration
     /// </summary>
     /// <typeparam name="TModel">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public HubEndpointConfiguration ConfigureInvokeServer<TModel>(Action<InvokeServerMapping<TModel>> configurer)
+    public HubEndpointConfiguration ConfigureInvokeServer<TModel>(Action<InvokeServerMapping> configurer)
     {
 
         var configuration = new InvokeServerMapping<TModel>();
@@ -74,7 +76,7 @@ public sealed class HubEndpointConfiguration
         configuration.ThrowIfInvalid();
 
         // a string (topic) is bound to a  C# type/deserializer
-        inbound[configuration.Topic] = configuration;
+        _inbound[configuration.Topic] = configuration;
 
         // And register the scoped handler within the service provider
         _services.AddScoped(configuration.HandlerType);
@@ -84,14 +86,14 @@ public sealed class HubEndpointConfiguration
 
     internal (string Topic, string Payload) Serialize<TModel>(TModel message)
     {
-        if (!Outbound.TryGetValue(typeof(TModel), out var mapping))
+        if (!_outbound.TryGetValue(typeof(TModel), out var mapping))
             throw new MissingConfigurationException($"No configuration found for message type {typeof(TModel)}. Please ensure it is registered with ConfigureInvokeClient<TModel>() method.");
         return (mapping.Topic, mapping.Serialize(message));
     }
 
     internal dynamic Deserialize(string topic, string payload)
     {
-        if (!inbound.TryGetValue(topic, out var mapping))
+        if (!_inbound.TryGetValue(topic, out var mapping))
             throw new MissingConfigurationException($"No configuration found for topic {topic}. Please ensure it is registered with ConfigureInvokeClient<TModel>() method.");
 
         return mapping.Deserialize(payload);

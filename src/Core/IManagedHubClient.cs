@@ -4,9 +4,9 @@ namespace ManagedLib.ManagedSignalR;
 
 
 /// <summary>
-/// Base interface for SignalR client communication.
-/// Example usage:
-/// public class ChatHub : ManagedHub<ChatHub> { }
+/// Base interface for SignalR client communication. <br />
+/// Example usage:<br />
+/// <c>public class ChatHub : ManagedHub&lt;ChatHub&gt; { }</c>
 /// </summary>
 public interface IManagedHubClient
 {
