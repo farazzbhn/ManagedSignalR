@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
@@ -15,9 +16,8 @@ internal class DistributedLockProvider : IDistributedLockProvider
         _disributedCacheProvider = distributedCache;
     }
 
-
     // prefixes the cache key to ensure uniqueness of teh key
-    private static string GenerateCacheKey(string key) => $"msrlock:{key}";
+    private static string GenerateCacheKey(string key) => $"{Constants.CacheKeyPrefix}lock:{key}";
 
 
     public async Task<string?> WaitAsync(string key, TimeSpan? timeout = null)

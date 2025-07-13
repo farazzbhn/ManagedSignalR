@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
@@ -16,8 +17,13 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
         _cache = cache;
     }
 
+    private static string GenerateCacheKey(string key) => $"{Constants.CacheKeyPrefix}:{key}";
+
+
     public Task<T?> GetAsync<T>(string key) where T : class
     {
+        key = GenerateCacheKey(key);
+
         if (_cache.TryGetValue(key, out var value))
         {
             return Task.FromResult(value as T);
@@ -28,6 +34,8 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
 
     public Task SetAsync<T>(string key, T value, TimeSpan ttl) where T : class
     {
+        key = GenerateCacheKey(key);
+
         var options = new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl
@@ -39,6 +47,8 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
 
     public Task<bool> RemoveAsync(string key)
     {
+        key = GenerateCacheKey(key);
+
         _cache.Remove(key);
         return Task.FromResult(true);
     }

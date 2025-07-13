@@ -2,8 +2,7 @@
 {
     public static class Constants
     {
-        public const string Anonymous = "anon";
-        public const string Prefix = "msr:";
-        public static string InstanceId = Guid.NewGuid().ToString("N");
+        public const string Unauthenticated = "unauthenticated";
+        public const string CacheKeyPrefix = "msr:";
     }
 }

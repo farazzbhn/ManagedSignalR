@@ -41,7 +41,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         await base.OnConnectedAsync();
 
-        string userId = Context.UserIdentifier ?? Constants.Anonymous;
+        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         string connectionId = Context.ConnectionId;
 
         // Attempt to acquire a distributed ity lockProvider. 
@@ -73,7 +73,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             var connection = new Connection(Constants.InstanceId, Context.ConnectionId);
             session.Connections.Add(connection);
-            await _cache.SetAsync(userId, session);
+            await _cache.SetAsync(userId, session, TimeSpan.FromSeconds(2));
         }
         // Failed to cache the updated object => Log, abort, and return.
         catch (Exception ex)    // Log & Abort
@@ -100,7 +100,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
     public sealed override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = Context.UserIdentifier ?? Constants.Anonymous;
+        var userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         var connectionId = Context.ConnectionId;
 
         await OnDisconnectedHookAsync();
