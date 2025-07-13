@@ -23,7 +23,7 @@ public interface IDistributedCacheProvider
     /// <typeparam name="T">Value type</typeparam>
     /// <param name="key">Cache key</param>
     /// <param name="value">Value to store</param>
-    Task SetAsync<T>(string key, T value) where T : class;
+    Task SetAsync<T>(string key, T value, TimeSpan ttl) where T : class;
 
     /// <summary>
     /// Removes a value from cache <br />

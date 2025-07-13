@@ -37,6 +37,5 @@ public sealed class InvokeClientMapping<TModel> : InvokeClientMapping
     {
         if (Topic == null)
             throw new InvalidOperationException($"Topic not set for type {typeof(TModel).Name}");
-
     }
 }

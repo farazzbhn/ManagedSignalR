@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
@@ -18,21 +19,22 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<GlobalConfiguration> configurer
+        Action<ManagedSignalRConfiguration> configurer
     )
     {
         // Create and configure the hub configuration
-        var configuration = new GlobalConfiguration(services);
+        var configuration = new ManagedSignalRConfiguration(services);
 
         configurer.Invoke(configuration);
+
 
         // Register core services
         services.AddSingleton(configuration);
         services.AddSingleton<HubCommandDispatcher>();
 
         // Register the default cache provider
-        services.AddSingleton<ICacheProvider, SingleInstanceCacheProvider>();
-        services.AddScoped<ILockProvider, DefaultLockProvider>();
+        services.AddSingleton<IDistributedCacheProvider, InMemoryCacheProvider>();
+        services.AddScoped<IDistributedLockProvider, DistributedLockProvider>();
 
         // Configure SignalR
         services.AddSignalR(options =>
@@ -41,7 +43,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register the managed hub helper
-        services.AddScoped<IManagedHubHelper, HubMediator>();
+        services.AddScoped<ManagedHubHelper>();
 
         return services;
     }

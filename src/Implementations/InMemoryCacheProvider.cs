@@ -1,34 +1,45 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Caching.Memory;
 using ManagedLib.ManagedSignalR.Abstractions;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Thread-safe in-memory implementation of <see cref="IDistributedCacheProvider"/> using ConcurrentDictionary.
-/// This is the default implementation suitable for single-server scenarios.
-/// For distributed systems, consider implementing a distributed cache provider and mind the uniqueness of the key
+/// Thread-safe in-memory implementation of <see cref="IDistributedCacheProvider"/> using Microsoft's IMemoryCache.
+/// Supports TTL (Time-To-Live) via absolute expiration.
 /// </summary>
 public class InMemoryCacheProvider : IDistributedCacheProvider
 {
-    private static readonly ConcurrentDictionary<string, dynamic> s_cache = new();
+    private readonly IMemoryCache _cache;
 
-    public Task<T> GetAsync<T>(string key) where T : class
+    public InMemoryCacheProvider(IMemoryCache cache)
     {
-        if (s_cache.TryGetValue(key, out var value))
+        _cache = cache;
+    }
+
+    public Task<T?> GetAsync<T>(string key) where T : class
+    {
+        if (_cache.TryGetValue(key, out var value))
         {
             return Task.FromResult(value as T);
         }
+
         return Task.FromResult<T?>(null);
     }
 
-    public Task SetAsync<T>(string key, T value) where T : class
+    public Task SetAsync<T>(string key, T value, TimeSpan ttl) where T : class
     {
-        s_cache[key] = value;
+        var options = new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = ttl
+        };
+
+        _cache.Set(key, value, options);
         return Task.CompletedTask;
     }
 
     public Task<bool> RemoveAsync(string key)
     {
-        return Task.FromResult(s_cache.TryRemove(key, out _));
+        _cache.Remove(key);
+        return Task.FromResult(true);
     }
 }

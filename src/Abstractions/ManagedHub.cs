@@ -83,7 +83,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             return;
         }
 
-        // Release the distributed lockProvider
+        // Release the distributed lock
         finally
         {
             await _lockProvider.ReleaseAsync(userId, token);
