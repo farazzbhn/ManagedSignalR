@@ -32,13 +32,14 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
         return Task.FromResult<T?>(null);
     }
 
-    public Task SetAsync<T>(string key, T value, TimeSpan ttl) where T : class
+    public Task SetAsync<T>(string key, T value, int ttl) where T : class
     {
         key = GenerateCacheKey(key);
 
+
         var options = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = ttl
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(ttl)
         };
 
         _cache.Set(key, value, options);

@@ -71,9 +71,9 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
                 };
             }
 
-            var connection = new Connection(Constants.InstanceId, Context.ConnectionId);
+            var connection = new Connection(AppInfo.InstanceId, Context.ConnectionId);
             session.Connections.Add(connection);
-            await _cache.SetAsync(userId, session, TimeSpan.FromSeconds(2));
+            await _cache.SetAsync(userId, session, Constants.TTL);
         }
         // Failed to cache the updated object => Log, abort, and return.
         catch (Exception ex)    // Log & Abort
@@ -149,7 +149,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             }
 
             // Update the ManagedHubSession if other active connections are found
-            await _cache.SetAsync(userId, session);
+            await _cache.SetAsync(userId, session, Constants.TTL);
 
         }
         finally

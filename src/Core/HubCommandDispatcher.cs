@@ -2,7 +2,7 @@
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 
-namespace ManagedLib.ManagedSignalR;
+namespace ManagedLib.ManagedSignalR.Core;
 
 public sealed class HubCommandDispatcher 
 {

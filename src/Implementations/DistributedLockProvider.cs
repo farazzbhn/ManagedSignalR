@@ -35,7 +35,7 @@ internal class DistributedLockProvider : IDistributedLockProvider
 
             if (existing == null)
             {
-                await _disributedCacheProvider.SetAsync(cacheKey, token);
+                await _disributedCacheProvider.SetAsync(cacheKey, token, Constants.TTL);
                 // Re-check if we're still the owner (in case of race condition)
                 var current = await _disributedCacheProvider.GetAsync<string>(cacheKey);
                 if (current == token) return token;

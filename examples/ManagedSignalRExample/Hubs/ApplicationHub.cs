@@ -1,6 +1,7 @@
 ﻿using ManagedLib.ManagedSignalR;
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 using ManagedLib.ManagedSignalR.Types;
 using ManagedSignalRExample.Models;

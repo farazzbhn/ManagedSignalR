@@ -1,10 +1,4 @@
-﻿using System.ComponentModel;
-using ManagedLib.ManagedSignalR.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using ManagedLib.ManagedSignalR.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
@@ -20,8 +14,8 @@ public sealed class HubEndpointConfiguration
         IServiceCollection services
     )
     {
-        _services = services;
         HubType = hubType;
+        _services = services;
         _inbound = new();
         _outbound = new();
     }

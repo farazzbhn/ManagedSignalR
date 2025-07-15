@@ -1,7 +1,5 @@
-﻿namespace ManagedLib.ManagedSignalR.Core
+﻿namespace ManagedLib.ManagedSignalR.Core;
+public static class AppInfo
 {
-    public static class AppInfo
-    {
-        public static string InstanceId = Guid.NewGuid().ToString("N");
-    }
+    public static string InstanceId = Guid.NewGuid().ToString("N");
 }
