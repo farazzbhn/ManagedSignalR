@@ -45,7 +45,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         string connectionId = Context.ConnectionId;
 
         // Attempt to acquire a distributed ity lockProvider. 
-        string? token = await _lockProvider.WaitAsync(userId);
+        string? token = await _lockProvider.AcquireAsync(userId);
 
 
         // Failed to acquire the distributed lockProvider => Abort & return
@@ -59,12 +59,31 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         // Try & associate the connection ID with the cached user session.
         try
         {
-            // retrieve the cached list of connections associated with the user
-            var session = await _cache.GetAsync<ManagedHubSession>(userId);
+            // create the session
+            var session = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId);
 
-            if (session == null)
+            // look up the distributed cache for the session ( decide if is duplicate ) 
+            (string Key, string Value) cacheEntry = session.ToCacheEntry();
+            
+            string? cachedValue = await _cache.GetAsync(cacheEntry.Key);
+            
+            if (cachedValue is not null)
             {
-                session = new ManagedHubSession
+                // decide if the connection id was previously assigned to another instance id
+                if (cachedValue != AppInfo.InstanceId)
+                {
+                    // re-assign the session to the current instance
+                    await _cache.SetAsync(cacheEntry.Key, cacheEntry.Value, Constants.SessionTTL);
+                }
+            }
+
+
+
+
+
+            if (connection == null)
+            {
+                connection = new ManagedHubSession
                 {
                     UserId = userId,
                     Connections = new ()
@@ -72,8 +91,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             }
 
             var connection = new Connection(AppInfo.InstanceId, Context.ConnectionId);
-            session.Connections.Add(connection);
-            await _cache.SetAsync(userId, session, Constants.TTL);
+            connection.Connections.Add(connection);
+            await _cache.SetAsync(userId, connection, Constants.SessionTTL);
         }
         // Failed to cache the updated object => Log, abort, and return.
         catch (Exception ex)    // Log & Abort
@@ -107,7 +126,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
 
         // Attempt to acquire a distributed ity lockProvider. 
-        string? token = await _lockProvider.WaitAsync(userId);
+        string? token = await _lockProvider.AcquireAsync(userId);
 
 
         // Failed to acquire the distributed lockProvider => Abort & return
@@ -149,7 +168,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             }
 
             // Update the ManagedHubSession if other active connections are found
-            await _cache.SetAsync(userId, session, Constants.TTL);
+            await _cache.SetAsync(userId, session, Constants.SessionTTL);
 
         }
         finally

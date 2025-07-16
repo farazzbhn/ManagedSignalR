@@ -6,7 +6,7 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
 /// Thread-safe in-memory implementation of <see cref="IDistributedCacheProvider"/> using Microsoft's IMemoryCache.
-/// Supports TTL (Time-To-Live) via absolute expiration.
+/// Supports TTL (Time-To-Live (ms)) via absolute expiration.
 /// </summary>
 public class InMemoryCacheProvider : IDistributedCacheProvider
 {
@@ -17,29 +17,29 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
         _cache = cache;
     }
 
-    private static string GenerateCacheKey(string key) => $"{Constants.CacheKeyPrefix}:{key}";
+    private static string GenerateCacheKey(string key) => $"{Constants.CacheKeyPrefix}{key}";
 
 
-    public Task<T?> GetAsync<T>(string key) where T : class
+    public Task<string?> GetAsync(string key) 
     {
         key = GenerateCacheKey(key);
 
-        if (_cache.TryGetValue(key, out var value))
+        if (_cache.TryGetValue(key, out string? value))
         {
-            return Task.FromResult(value as T);
+            return Task.FromResult(value);
         }
 
-        return Task.FromResult<T?>(null);
+        return Task.FromResult<string?>(null);
     }
 
-    public Task SetAsync<T>(string key, T value, int ttl) where T : class
+    public Task SetAsync(string key, string value, int ttl_milliseconds)
     {
         key = GenerateCacheKey(key);
 
 
         var options = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(ttl)
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(ttl_milliseconds)
         };
 
         _cache.Set(key, value, options);

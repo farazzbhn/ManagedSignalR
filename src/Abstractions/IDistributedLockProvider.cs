@@ -8,15 +8,17 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public interface IDistributedLockProvider
 {
     /// <summary>
-    /// Attempts to acquire a lock on the specified key.
+    /// Attempts to acquire a lock on the specified key. <br /> 
+    /// cannot throw
     /// </summary>
     /// <returns>The token if lock was acquired, otherwise null</returns>
-    public Task<string?> WaitAsync(string key, TimeSpan? timeout = null);
+    public Task<string?> AcquireAsync(string userId, TimeSpan? timeout = null);
 
 
     /// <summary>
-    /// Releases the lock if token matches.
+    /// Releases the lock if token matches.<br /> 
+    /// cannot throw
     /// </summary>
     /// <returns>True if lock was successfully released</returns>
-    public Task<bool> ReleaseAsync(string key, string token);
+    public Task<bool> ReleaseAsync(string userId, string token);
 }
