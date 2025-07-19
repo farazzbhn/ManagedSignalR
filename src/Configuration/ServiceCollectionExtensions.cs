@@ -22,14 +22,15 @@ public static class ServiceCollectionExtensions
         Action<ManagedSignalRConfiguration> configurer
     )
     {
+
         // Create and configure the hub configuration
         var configuration = new ManagedSignalRConfiguration(services);
-
         configurer.Invoke(configuration);
 
 
         // Register core services
         services.AddSingleton(configuration);
+
         services.AddSingleton<HubCommandDispatcher>();
 
         // Register the default cache provider
@@ -42,8 +43,12 @@ public static class ServiceCollectionExtensions
             options.EnableDetailedErrors = true;
         });
 
+
         // Register the managed hub helper
-        services.AddScoped<ManagedHubHelper>();
+        //services.AddScoped<Manage;
+
+        services.AddScoped<LocalCacheProvider<CacheEntry>>();
+        services.AddHostedService<CacheEntryBackgroundService>();
 
         return services;
     }

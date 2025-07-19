@@ -1,4 +1,4 @@
-﻿namespace ManagedLib.ManagedSignalR.Types;
+﻿namespace ManagedLib.ManagedSignalR.Core;
 
 
 /// <summary>
@@ -33,33 +33,32 @@ public class ManagedHubSession
     /// <summary>
     /// Parses a cache key and value into a <see cref="ManagedHubSession"/> instance.
     /// </summary>
-    /// <param name="cacheKey">
+    /// <param name="key">
     /// The cache key in the format <c>"userId:connectionId"</c>.
     /// </param>
-    /// <param name="cacheValue">
+    /// <param name="value">
     /// The value associated with the cache key (e.g., the instance ID).
     /// </param>
     /// <returns>A populated <see cref="ManagedHubSession"/> instance.</returns>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="cacheKey"/> is null or empty.</exception>
-    /// <exception cref="FormatException">Thrown if <paramref name="cacheKey"/> is not in the expected format.</exception>
-    internal static ManagedHubSession Parse(string cacheKey, string cacheValue)
+    /// <exception cref="ArgumentException">Thrown if <paramref name="key"/> is null or empty.</exception>
+    /// <exception cref="FormatException">Thrown if <paramref name="key"/> is not in the expected format.</exception>
+    internal static ManagedHubSession FromCacheKeyValue(string key, string value)
     {
-        if (string.IsNullOrWhiteSpace(cacheKey))
-            throw new ArgumentException("Cache key cannot be null or empty.", nameof(cacheKey));
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentException("Cache key cannot be null or empty.", nameof(key));
 
-        var parts = cacheKey.Split(':', StringSplitOptions.None);
+        var parts = key.Split(':', StringSplitOptions.None);
 
-        if (parts.Length != 2)
-            throw new FormatException("Cache key must be in the format 'userId:connectionId'");
+        if (parts.Length != 3 || parts[0] != "msr")
+            throw new FormatException("Cache key must be in the format 'msr:userId:connectionId'");
 
         return new ManagedHubSession
-        {
-            UserId = parts[0],
-            ConnectionId = parts[1],
-            InstanceId = cacheValue
-        };
+        (
+            userId: parts[1],
+            connectionId: parts[2],
+            instanceId: value
+        );
     }
-
 
 
     /// <summary>
@@ -75,9 +74,8 @@ public class ManagedHubSession
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="session"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="session"/> has any null or empty required properties.</exception>
-    internal (string Key, string Value) ToCacheEntry()
+    internal (string Key, string Value) ToCacheKeyValue()
     {
-
         if (string.IsNullOrWhiteSpace(UserId))
             throw new ArgumentException("UserId cannot be null or empty.", nameof(UserId));
 
@@ -87,10 +85,11 @@ public class ManagedHubSession
         if (string.IsNullOrWhiteSpace(InstanceId))
             throw new ArgumentException("InstanceId cannot be null or empty.", nameof(InstanceId));
 
-        var key = $"{UserId}:{ConnectionId}";
+        var key = $"msr:{UserId}:{ConnectionId}";
         var value = InstanceId;
 
         return (key, value);
     }
+
 
 }

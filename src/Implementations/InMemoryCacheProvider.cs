@@ -17,12 +17,9 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
         _cache = cache;
     }
 
-    private static string GenerateCacheKey(string key) => $"{Constants.CacheKeyPrefix}{key}";
-
 
     public Task<string?> GetAsync(string key) 
     {
-        key = GenerateCacheKey(key);
 
         if (_cache.TryGetValue(key, out string? value))
         {
@@ -34,9 +31,6 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
 
     public Task SetAsync(string key, string value, int ttl_milliseconds)
     {
-        key = GenerateCacheKey(key);
-
-
         var options = new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(ttl_milliseconds)
@@ -48,8 +42,6 @@ public class InMemoryCacheProvider : IDistributedCacheProvider
 
     public Task<bool> RemoveAsync(string key)
     {
-        key = GenerateCacheKey(key);
-
         _cache.Remove(key);
         return Task.FromResult(true);
     }

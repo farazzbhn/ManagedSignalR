@@ -21,7 +21,7 @@
 //        IServiceProvider serviceProvider,
 //        IDistributedCacheProvider cache,
 //        ILogger<ManagedHubHelper> logger,
-//        ManagedSignalRConfiguration configuration, 
+//        ManagedSignalRConfiguration configuration,
 //        IPublishEndpoint publisher
 //    )
 //    {
@@ -37,7 +37,7 @@
 //    {
 //        var session = _cache.GetAsync<ManagedHubSession>(userId);
 //        return session;
-//    } 
+//    }
 
 
 //    public async Task<bool> SendToConnectionId<THub>

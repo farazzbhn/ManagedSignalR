@@ -3,23 +3,22 @@ using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
-using ManagedLib.ManagedSignalR.Types;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
 public class ApplicationHub : ManagedHub
 {
-    private readonly ManagedHubHelper _helper;
+    private readonly LocalCacheProvider _helper;
 
     public ApplicationHub
     (
         ManagedSignalRConfiguration configuration,
         HubCommandDispatcher bus,
         ILogger<ManagedHub> logger,
-        IDistributedCacheProvider _cache,
+        IDistributedCacheProvider distributedCacheProvider,
         IDistributedLockProvider _lock,
-        ManagedHubHelper helper
-    ) : base(configuration, bus, logger, _cache, _lock)
+        LocalCacheProvider helper
+    ) : base(configuration, bus, logger, distributedCacheProvider, _lock)
     {
         _helper = helper;
     }
