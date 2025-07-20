@@ -51,10 +51,11 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             (string Key, string Value) entry = session.ToCacheKeyValue();
 
-            await _distributedCacheProvider.SetAsync(entry.Key, entry.Value, Constants.SessionTTL);
+            await _distributedCacheProvider.SetAsync(entry.Key, entry.Value, Constants.SessionTtl);
 
             // caching the object locally allows for a background process to re-set the cache once it has been expired
             _localCacheProvider.Set(new CacheEntry(entry.Key, entry.Value));
+
         }
         catch (Exception ex) // Failed to cache the updated object => Log, abort, and return.
         {
@@ -79,6 +80,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
     public sealed override async Task OnDisconnectedAsync(Exception? exception)
     {
+
+        await base.OnDisconnectedAsync(exception);
 
         var userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         var connectionId = Context.ConnectionId;
@@ -137,8 +140,4 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         await _dispatcher.Handle(command, Context);
     }
 
-}
-
-public class v
-{
 }

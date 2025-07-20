@@ -28,7 +28,7 @@ internal class DistributedLockProvider : IDistributedLockProvider
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    private static string KeyGen(string key) => $"{Constants.CacheKeyPrefix}lock:{key}";
+    private static string KeyGen(string key) => $"msr:lock:{key}";
 
 
     public async Task<string?> AcquireAsync(string userId, TimeSpan? timeout = null)

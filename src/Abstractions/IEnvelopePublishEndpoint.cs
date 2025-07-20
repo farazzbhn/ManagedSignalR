@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using ManagedLib.ManagedSignalR.Types;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
-public interface IPublishEndpoint
+
+
+public interface IEnvelopePublishEndpoint
 {
     public Task Publish(Envelope envelope);
 }

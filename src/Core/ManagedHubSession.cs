@@ -5,25 +5,27 @@
 /// Represents a managed session for a SignalR hub connection,
 /// including the user ID, connection ID, and the associated instance ID.
 /// </summary>
-public class ManagedHubSession
+internal class ManagedHubSession
 {
+    private const string prefix = "msr";
+
     /// <summary>
     /// Gets or sets the user identifier associated with the session.
     /// </summary>
-    public string UserId { get; protected set; }
+    internal string UserId { get; private set; }
 
     /// <summary>
     /// Gets or sets the SignalR connection identifier for the session.
     /// </summary>
-    public string ConnectionId { get; protected set; }
+    internal string ConnectionId { get; private set; }
 
     /// <summary>
     /// Gets or sets the instance identifier associated with the session (usually the cache value).
     /// </summary>
-    public string InstanceId { get; protected set; }
+    internal string InstanceId { get; private set; }
 
 
-    public ManagedHubSession(string userId, string connectionId, string instanceId)
+    internal ManagedHubSession(string userId, string connectionId, string instanceId)
     {
         UserId = userId;
         ConnectionId = connectionId;
@@ -49,8 +51,8 @@ public class ManagedHubSession
 
         var parts = key.Split(':', StringSplitOptions.None);
 
-        if (parts.Length != 3 || parts[0] != "msr")
-            throw new FormatException("Cache key must be in the format 'msr:userId:connectionId'");
+        if (parts.Length != 3 || parts[0] != prefix)
+            throw new FormatException($"Cache key must be in the format '{prefix}:userId:connectionId'");
 
         return new ManagedHubSession
         (
@@ -85,8 +87,8 @@ public class ManagedHubSession
         if (string.IsNullOrWhiteSpace(InstanceId))
             throw new ArgumentException("InstanceId cannot be null or empty.", nameof(InstanceId));
 
-        var key = $"msr:{UserId}:{ConnectionId}";
-        var value = InstanceId;
+        string key = $"{prefix}:{UserId}:{ConnectionId}";
+        string value = InstanceId;
 
         return (key, value);
     }

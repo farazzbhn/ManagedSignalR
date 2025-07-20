@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
     )
     {
 
+        /// 
         // Create and configure the hub configuration
         var configuration = new ManagedSignalRConfiguration(services);
         configurer.Invoke(configuration);
@@ -47,7 +48,9 @@ public static class ServiceCollectionExtensions
         // Register the managed hub helper
         //services.AddScoped<Manage;
 
+        // local cache provider is used to persist instance-specific data regarding the connection
         services.AddScoped<LocalCacheProvider<CacheEntry>>();
+
         services.AddHostedService<CacheEntryBackgroundService>();
 
         return services;
