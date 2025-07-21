@@ -4,6 +4,11 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Core;
 
+
+/// <summary>
+/// Dispatches SignalR hub commands by locating and invoking the appropriate
+/// <see cref="IHubCommandHandler{TCommand}"/> implementations registered in the service container.
+/// </summary>
 public sealed class HubCommandDispatcher 
 {
     private readonly IServiceProvider _serviceProvider;
@@ -18,7 +23,7 @@ public sealed class HubCommandDispatcher
     /// that can process the specified command, returning the handler's response.
     /// </summary>
     /// <param name="command">The post command instance to handle.</param>
-    public async Task Handle(dynamic command, HubCallerContext context)
+    public async Task Handle(dynamic command, HubCallerContext context, string userId)
     {
         // Determine the type (e.g., IPostHandler<Location>
         Type handlerType = typeof(IHubCommandHandler<>).MakeGenericType(command.GetType());
@@ -34,7 +39,7 @@ public sealed class HubCommandDispatcher
 
             try
             {
-                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context});
+                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context, userId});
             }
             catch (Exception exception)
             {

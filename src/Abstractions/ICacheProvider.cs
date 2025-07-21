@@ -31,6 +31,17 @@ public interface ICacheProvider
     /// <returns>True if value was removed</returns>
     Task<bool> RemoveAsync(string key);
 
-    Task<String[]> Scan(string pattern);
+
+    /// <summary>
+    /// Scans the underlying key-value store and retrieves all keys that match the given pattern.
+    /// </summary>
+    /// <param name="pattern">
+    /// The key pattern to match against (e.g., <c>"prefix:*"</c>). 
+    /// The pattern syntax depends on the backing store and may support wildcards or regex-like matching.
+    /// </param>
+    /// <returns>
+    /// A task representing the asynchronous scan operation, containing an array of matching key strings.
+    /// </returns>
+    Task<string[]> ScanAsync(string pattern);
 }
 

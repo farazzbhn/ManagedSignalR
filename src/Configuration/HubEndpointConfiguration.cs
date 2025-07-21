@@ -45,7 +45,7 @@ public sealed class HubEndpointConfiguration
         configurer.Invoke(configuration);
 
 
-        configuration.ThrowIfInvalid();
+        configuration.EnsureConfigured();
 
 
         // a C# type is bound to a topic/serializer
@@ -59,7 +59,7 @@ public sealed class HubEndpointConfiguration
     /// </summary>
     /// <typeparam name="TModel">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public HubEndpointConfiguration ConfigureInvokeServer<TModel>(Action<InvokeServerMapping> configurer)
+    public HubEndpointConfiguration ConfigureInvokeServer<TModel>(Action<InvokeServerMapping<TModel>> configurer)
     {
 
         var configuration = new InvokeServerMapping<TModel>();
@@ -67,7 +67,7 @@ public sealed class HubEndpointConfiguration
         configurer.Invoke(configuration);
         
 
-        configuration.ThrowIfInvalid();
+        configuration.EnsureConfigured();
 
         // a string (topic) is bound to a  C# type/deserializer
         _inbound[configuration.Topic] = configuration;

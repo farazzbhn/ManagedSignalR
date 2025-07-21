@@ -17,7 +17,6 @@ internal class CacheEntryBackgroundService : BackgroundService
     private readonly LocalCacheProvider<CacheEntry> _localCacheProvider;
     private readonly ICacheProvider _cacheProvider;
     private readonly ILogger _logger;
-    private readonly TimeSpan _interval = TimeSpan.FromSeconds(2000);
 
 public CacheEntryBackgroundService
 (
@@ -40,7 +39,7 @@ public CacheEntryBackgroundService
             {
                 try
                 {
-                    await _cacheProvider.SetAsync(entry.key, entry.value, Constants.SessionTtl);
+                    await _cacheProvider.SetAsync(entry.key, entry.value, Constants.ManagedHubSessionCacheTtl);
                 }
                 catch (Exception ex)
                 {
@@ -48,7 +47,7 @@ public CacheEntryBackgroundService
                                                 $"Exception :\t {ex.Message}");
                 }
             }
-            await Task.Delay(_interval, stoppingToken);
+            await Task.Delay(Constants.ManagedHubSessionCacheReInstateInterval, stoppingToken);
         }
     }
 }

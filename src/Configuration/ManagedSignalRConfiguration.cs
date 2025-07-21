@@ -10,7 +10,7 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// </summary>
 public class ManagedSignalRConfiguration
 {
-    public DeploymentMode? DeploymentMode { get; set; } = null;
+    internal DeploymentMode? DeploymentMode { get; private set; } = null;
 
     private List<HubEndpointConfiguration> Configurations { get; }
 

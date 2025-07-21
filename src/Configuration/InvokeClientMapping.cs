@@ -1,9 +1,10 @@
 ﻿using ManagedLib.ManagedSignalR.Core;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 public abstract class InvokeClientMapping
 {
-    internal string Topic { get; set; }
+    internal string? Topic { get; set; } = null;
     internal abstract string Serialize(dynamic obj);
 }
 
@@ -35,9 +36,17 @@ public sealed class InvokeClientMapping<TModel> : InvokeClientMapping
         return this;
     }
 
-    public void ThrowIfInvalid()
+
+    /// <summary>
+    /// Ensures that the current mapping configuration is complete and valid.
+    /// </summary>
+    /// <exception cref="MisconfiguredException"></exception>
+    public void EnsureConfigured()
     {
-        if (Topic == null)
-            throw new InvalidOperationException($"Topic not set for type {typeof(TModel).Name}");
+        if (string.IsNullOrWhiteSpace(Topic))
+            throw new MisconfiguredException(
+                $"Topic is not configured for outgoing message of type '{typeof(TModel).Name}'.\n" +
+                $"Use .BindTopic(\"your-topic\") to route the message type ({typeof(TModel).Name}) to a specific topic.");
+
     }
 }

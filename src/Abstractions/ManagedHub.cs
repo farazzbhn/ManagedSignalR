@@ -1,8 +1,9 @@
-﻿using System.Reflection.Metadata;
-using ManagedLib.ManagedSignalR.Configuration;
+﻿using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 
@@ -13,21 +14,22 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     private readonly HubCommandDispatcher _dispatcher;
     private readonly ILogger<ManagedHub> _logger;
     private readonly ICacheProvider _cacheProvider;
-    private readonly LocalCacheProvider<CacheEntry> _localCacheProvider;
+    private readonly IServiceProvider _serviceProvider;
+
     protected ManagedHub
     (
         ManagedSignalRConfiguration configuration,
         HubCommandDispatcher dispatcher,
         ILogger<ManagedHub> logger, 
         ICacheProvider cacheProvider, 
-        LocalCacheProvider<CacheEntry> localCacheProvider
-    )  
+        IServiceProvider serviceProvider
+    )
     {
         _configuration = configuration;
         _dispatcher = dispatcher;
         _logger = logger;
         _cacheProvider = cacheProvider;
-        _localCacheProvider = localCacheProvider;
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
@@ -42,7 +44,6 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         string connectionId = Context.ConnectionId;
 
-
         // Try & associate the connection ID with the cached user session.
         try
         {
@@ -53,12 +54,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             if (_configuration.DeploymentMode == DeploymentMode.Distributed)
             {
-                // set within the distributed cache using the default TTL.
-                // The mechanism allows for automatic removal of instance-specific cache keys in case of an unexpected shutdown
-                await _cacheProvider.SetAsync(entry.Key, entry.Value, Constants.SessionTtl);
+                // cache the key/value pair cache using the default TTL.
+                // The mechanism allows for automatic removal of instance-bound cache entries in case the app shuts down unexpectedly
+                // A background service is then used to re-cache this entries before they fail
+                await _cacheProvider.SetAsync(entry.Key, entry.Value, Constants.ManagedHubSessionCacheTtl);
 
                 // caching the object locally allows for a background process to re-set the cache once it has been expired
-                _localCacheProvider.Set(new CacheEntry(entry.Key, entry.Value));
+                LocalCacheProvider<CacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<CacheEntry>>();
+                localCache.Set(new CacheEntry(entry.Key, entry.Value));
             }
             else // is a single instance application 
             {
@@ -82,7 +85,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         }
 
         // Invoke the hook
-        await OnConnectedHookAsync();
+        await OnConnectedHookAsync(userId);
     }
 
 
@@ -100,10 +103,13 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         (string Key, string Value) entry = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId).ToCacheKeyValue();
 
-        await OnDisconnectedHookAsync();
+        // invoke the hook
+        await OnDisconnectedHookAsync(userId);
+
         try
         {
 
+            // try remove from the cache. 
             bool removed = await _cacheProvider.RemoveAsync(entry.Key);
 
             if (!removed) 
@@ -123,21 +129,21 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             // remove the connection from the instance-bound memory cache which is used by the background service to re-cache the expiring key/value pairs
             if (_configuration.DeploymentMode == DeploymentMode.Distributed)
             {
-                bool removed = _localCacheProvider.Remove(new CacheEntry(entry.Key, entry.Value));
+                LocalCacheProvider<CacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<CacheEntry>>();
+                bool removed = localCache.Remove(new CacheEntry(entry.Key, entry.Value));
             }
         }
     }
 
-
     /// <summary>
     /// Empty hook -- Override to implement custom logic on connection
     /// </summary>
-    protected virtual Task OnConnectedHookAsync() => Task.CompletedTask;
+    protected virtual Task OnConnectedHookAsync(string userId) => Task.CompletedTask;
 
     ///<summary>
     /// Empty hook -- Override to implement custom logic on disconnection
     /// </summary>
-    protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
+    protected virtual Task OnDisconnectedHookAsync(string userId) => Task.CompletedTask;
 
 
 
@@ -150,11 +156,13 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     {
         HubEndpointConfiguration configuration = _configuration.GetConfiguration(this.GetType());
 
+        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
+
         // Deserialize using configured deserializer
         dynamic command = configuration.Deserialize(topic, message);
 
         // Dispatch to the registered handler
-        await _dispatcher.Handle(command, Context);
+        await _dispatcher.Handle(command, Context, userId);
     }
 
 }

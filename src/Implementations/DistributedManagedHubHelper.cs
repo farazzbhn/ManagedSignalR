@@ -2,18 +2,15 @@
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
-using ManagedLib.ManagedSignalR.Types.Exceptions;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
-internal class SingleInstanceManagedHubHelper : ManagedHubHelper
+internal class DistributedManagedHubHelper : ManagedHubHelper
 {
     private readonly ICacheProvider _cacheProvider;
 
-    public SingleInstanceManagedHubHelper
+    public DistributedManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 

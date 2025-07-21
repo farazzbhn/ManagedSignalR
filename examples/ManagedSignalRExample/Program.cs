@@ -1,52 +1,43 @@
-using ManagedLib.ManagedSignalR.Configuration;
+﻿using ManagedLib.ManagedSignalR.Configuration;
 using ManagedSignalRExample.Handlers;
-using ManagedSignalRExample.Handlers.Chat;
 using ManagedSignalRExample.Hubs;
 using ManagedSignalRExample.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.WebHost.UseUrls("http://localhost:5005");
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 builder.Services.AddManagedSignalR(builder =>
-{
-    builder.AddHub<ApplicationHub>()
 
-        .ConfigureInvokeClient<Message>(cfg =>
-            cfg
-                .RouteToTopic("msg")
-                .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
+        builder
+            .AsSingleInstance()
 
-        .ConfigureInvokeServer<Coordinates>(cfg =>
-            cfg
-                .FromTopic("loc")
-                // coordinates are sent as "lat,long" string 
-                .UseDeserializer(str =>
-                {
-                    string[] split = str.Split(',');
-                    return new Coordinates
-                    {
-                        Latitude = double.Parse(split[0]),
-                        Longitude = double.Parse(split[1])
-                    };
-                })
-                .UseHandler<CoordinatesHandler>())
+            .AddHub<ApplicationHub>()
+                .ConfigureInvokeClient<Alert>(cfg =>
+                    cfg
+                        .RouteToTopic("alert")
+                        // Or do not call UseSerializer to use the default (System.Text.Json) serializer 
+                        .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-        .ConfigureInvokeServer<NewMessage>(cfg =>
-            cfg
-                .FromTopic("msg")
-                // Not invoking the UseDeserializer method here means that the incoming message
-                // will be deserialized using the default JSON deserializer.
-                //.UseDeserializer(str => System.Text.Json.JsonSerializer.Deserialize<NewMessage>(str))
-                .UseHandler<NewMessageHandler>());
-
-});
+                .ConfigureInvokeServer<Coordinates>(cfg =>
+                    cfg
+                        .FromTopic("loc")
+                        // coordinates are sent as "lat,long" string 
+                        .UseDeserializer(str =>
+                        {
+                            string[] split = str.Split(',');
+                            return new Coordinates
+                            {
+                                Latitude = double.Parse(split[0]),
+                                Longitude = double.Parse(split[1])
+                            };
+                        })
+                        .UseHandler<CoordinatesHandler>())
+);
 
 
 
@@ -60,8 +51,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();  // ✅ Required before UseAuthorization & MapControllers
+
 app.UseAuthorization();
 
-app.MapControllers();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapHub<ApplicationHub>("/hub"); // ✅ Maps the API controllers
+});
 
 app.Run();

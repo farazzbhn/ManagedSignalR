@@ -2,6 +2,8 @@
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
@@ -23,35 +25,53 @@ public static class ServiceCollectionExtensions
     )
     {
 
-        /// 
         // Create and configure the hub configuration
         var configuration = new ManagedSignalRConfiguration(services);
         configurer.Invoke(configuration);
 
 
-        // Register core services
-        services.AddSingleton(configuration);
+        if (configuration.DeploymentMode is null)
+        {
+            throw new MisconfiguredException(
+                $"Deployment mode is not set.\n" +
+                $"To fix this, configure the system by calling 'AsSingleInstance()' or 'AsDistributed() within the provided configurer'");
 
+        }
+        else if (configuration.DeploymentMode is DeploymentMode.Distributed)
+        {
+            // use the distributed managed hub helper
+            services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
+
+            // use redis for multi-instance cache
+            services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
+
+            // local cache provider is used to persist instance-bound data to be used locally
+            services.AddScoped<LocalCacheProvider<CacheEntry>>();
+
+            // register the cache entry background service to re-cache instance-bound connection data before they expire
+            services.AddHostedService<CacheEntryBackgroundService>();
+        }
+        else // if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
+        {
+
+            // register the single-instance managed hub helper
+            services.AddScoped<ManagedHubHelper, SingleInstanceManagedHubHelper>();
+
+            // use in-memory cache for single-instance setup
+            services.AddMemoryCache(); 
+            services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
+        }
+
+
+        // Register the configuration as a singleton
+        services.AddSingleton(configuration);
         services.AddSingleton<HubCommandDispatcher>();
 
-        // Register the default cache provider
-        services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
-        services.AddScoped<IDistributedLockProvider, DistributedLockProvider>();
-
         // Configure SignalR
-        services.AddSignalR(options =>
+        services.AddSignalR(options => 
         {
             options.EnableDetailedErrors = true;
         });
-
-
-        // Register the managed hub helper
-        //services.AddScoped<Manage;
-
-        // local cache provider is used to persist instance-specific data regarding the connection
-        services.AddScoped<LocalCacheProvider<CacheEntry>>();
-
-        services.AddHostedService<CacheEntryBackgroundService>();
 
         return services;
     }
