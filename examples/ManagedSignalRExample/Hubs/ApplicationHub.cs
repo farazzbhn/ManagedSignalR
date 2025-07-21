@@ -15,10 +15,10 @@ public class ApplicationHub : ManagedHub
         ManagedSignalRConfiguration configuration,
         HubCommandDispatcher bus,
         ILogger<ManagedHub> logger,
-        IDistributedCacheProvider distributedCacheProvider,
+        ICacheProvider cacheProvider,
         IDistributedLockProvider _lock,
         LocalCacheProvider helper
-    ) : base(configuration, bus, logger, distributedCacheProvider, _lock)
+    ) : base(configuration, bus, logger, cacheProvider, _lock)
     {
         _helper = helper;
     }

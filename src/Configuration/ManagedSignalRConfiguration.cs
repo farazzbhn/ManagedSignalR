@@ -10,7 +10,10 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// </summary>
 public class ManagedSignalRConfiguration
 {
+    public DeploymentMode? DeploymentMode { get; set; } = null;
+
     private List<HubEndpointConfiguration> Configurations { get; }
+
 
     private readonly IServiceCollection _services;
 
@@ -42,6 +45,22 @@ public class ManagedSignalRConfiguration
         return config;
     }
 
+
+    public ManagedSignalRConfiguration AsSingleInstance()
+    {
+        DeploymentMode = Configuration.DeploymentMode.SingleInstance;
+        return this;
+    }
+
+
+    public ManagedSignalRConfiguration AsDistributed()
+    {
+        DeploymentMode = Configuration.DeploymentMode.Distributed;
+        return this;
+    }
+
+
+
     /// <summary>
     /// Finds the <see cref="HubEndpointConfiguration"/> associated with the SignalR hub of provided type
     /// </summary>
@@ -61,5 +80,10 @@ public class ManagedSignalRConfiguration
         return config;
     }
 
+}
 
+internal enum DeploymentMode
+{
+    SingleInstance,
+    Distributed
 }

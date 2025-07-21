@@ -15,19 +15,19 @@ namespace ManagedLib.ManagedSignalR.Core;
 internal class CacheEntryBackgroundService : BackgroundService
 {
     private readonly LocalCacheProvider<CacheEntry> _localCacheProvider;
-    private readonly IDistributedCacheProvider _distributedCacheProvider;
+    private readonly ICacheProvider _cacheProvider;
     private readonly ILogger _logger;
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(2000);
 
 public CacheEntryBackgroundService
 (
     LocalCacheProvider<CacheEntry> localCacheProvider,
-    IDistributedCacheProvider distributedCacheProvider,
+    ICacheProvider cacheProvider,
     ILogger<CacheEntryBackgroundService> logger
 )
 {
     _localCacheProvider = localCacheProvider;
-    _distributedCacheProvider = distributedCacheProvider;
+    _cacheProvider = cacheProvider;
     _logger = logger;
 }
 
@@ -40,7 +40,7 @@ public CacheEntryBackgroundService
             {
                 try
                 {
-                    await _distributedCacheProvider.SetAsync(entry.key, entry.value, Constants.SessionTtl);
+                    await _cacheProvider.SetAsync(entry.key, entry.value, Constants.SessionTtl);
                 }
                 catch (Exception ex)
                 {

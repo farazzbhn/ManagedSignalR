@@ -1,6 +1,4 @@
-﻿using ManagedLib.ManagedSignalR.Abstractions;
-
-namespace ManagedLib.ManagedSignalR;
+﻿namespace ManagedLib.ManagedSignalR.Core;
 
 
 /// <summary>

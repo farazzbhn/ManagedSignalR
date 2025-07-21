@@ -1,4 +1,6 @@
-﻿namespace ManagedLib.ManagedSignalR.Configuration;
+﻿using ManagedLib.ManagedSignalR.Core;
+
+namespace ManagedLib.ManagedSignalR.Configuration;
 public abstract class InvokeClientMapping
 {
     internal string Topic { get; set; }

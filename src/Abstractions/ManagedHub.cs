@@ -12,21 +12,21 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     private readonly ManagedSignalRConfiguration _configuration;
     private readonly HubCommandDispatcher _dispatcher;
     private readonly ILogger<ManagedHub> _logger;
-    private readonly IDistributedCacheProvider _distributedCacheProvider;
+    private readonly ICacheProvider _cacheProvider;
     private readonly LocalCacheProvider<CacheEntry> _localCacheProvider;
     protected ManagedHub
     (
         ManagedSignalRConfiguration configuration,
         HubCommandDispatcher dispatcher,
         ILogger<ManagedHub> logger, 
-        IDistributedCacheProvider distributedCacheProvider, 
+        ICacheProvider cacheProvider, 
         LocalCacheProvider<CacheEntry> localCacheProvider
     )  
     {
         _configuration = configuration;
         _dispatcher = dispatcher;
         _logger = logger;
-        _distributedCacheProvider = distributedCacheProvider;
+        _cacheProvider = cacheProvider;
         _localCacheProvider = localCacheProvider;
     }
 
@@ -51,10 +51,22 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             (string Key, string Value) entry = session.ToCacheKeyValue();
 
-            await _distributedCacheProvider.SetAsync(entry.Key, entry.Value, Constants.SessionTtl);
+            if (_configuration.DeploymentMode == DeploymentMode.Distributed)
+            {
+                // set within the distributed cache using the default TTL.
+                // The mechanism allows for automatic removal of instance-specific cache keys in case of an unexpected shutdown
+                await _cacheProvider.SetAsync(entry.Key, entry.Value, Constants.SessionTtl);
 
-            // caching the object locally allows for a background process to re-set the cache once it has been expired
-            _localCacheProvider.Set(new CacheEntry(entry.Key, entry.Value));
+                // caching the object locally allows for a background process to re-set the cache once it has been expired
+                _localCacheProvider.Set(new CacheEntry(entry.Key, entry.Value));
+            }
+            else // is a single instance application 
+            {
+                // values set within the instance-bound memory cache need not expire
+                await _cacheProvider.SetAsync(entry.Key, entry.Value);
+
+                // no need to cache keys using teh local cache provider. ( no background service required to re-cache expiring key/value pairs)
+            }
 
         }
         catch (Exception ex) // Failed to cache the updated object => Log, abort, and return.
@@ -83,17 +95,18 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         await base.OnDisconnectedAsync(exception);
 
-        var userId = Context.UserIdentifier ?? Constants.Unauthenticated;
-        var connectionId = Context.ConnectionId;
+        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
+        string? connectionId = Context.ConnectionId;
 
         (string Key, string Value) entry = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId).ToCacheKeyValue();
 
         await OnDisconnectedHookAsync();
         try
         {
-            bool removed_distributed = await _distributedCacheProvider.RemoveAsync(entry.Key);
 
-            if (!removed_distributed)
+            bool removed = await _cacheProvider.RemoveAsync(entry.Key);
+
+            if (!removed) 
             {
                 _logger.LogWarning($"Cache entry {entry.Key} cannot be deleted.");
             }
@@ -107,7 +120,11 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         finally
         {
-            bool removed_local = _localCacheProvider.Remove(new CacheEntry(entry.Key, entry.Value));
+            // remove the connection from the instance-bound memory cache which is used by the background service to re-cache the expiring key/value pairs
+            if (_configuration.DeploymentMode == DeploymentMode.Distributed)
+            {
+                bool removed = _localCacheProvider.Remove(new CacheEntry(entry.Key, entry.Value));
+            }
         }
     }
 

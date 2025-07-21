@@ -11,7 +11,7 @@ namespace ManagedLib.ManagedSignalR.Core;
 public class ManagedHubHelper
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IDistributedCacheProvider _cache;
+    private readonly ICacheProvider _cache;
     private readonly ILogger<ManagedHubHelper> _logger;
     private readonly ManagedSignalRConfiguration _configuration;
     private readonly IEnvelopePublishEndpoint _publisher;
@@ -19,7 +19,7 @@ public class ManagedHubHelper
     public ManagedHubHelper
     (
         IServiceProvider serviceProvider,
-        IDistributedCacheProvider cache,
+        ICacheProvider cache,
         ILogger<ManagedHubHelper> logger,
         ManagedSignalRConfiguration configuration,
         IEnvelopePublishEndpoint publisher
@@ -36,7 +36,6 @@ public class ManagedHubHelper
 
     public async Task<bool> SendToConnectionId<THub>
     (
-        string userId,
         string connectionId,
         object message
     ) where THub : ManagedHub
@@ -53,29 +52,37 @@ public class ManagedHubHelper
 
         (string Topic, string Payload) serialized = config.Serialize(message);
 
-
-
-        ManagedHubSession? session = await _cache.GetAsync<ManagedHubSession>(userId);
-
-        Connection? connection = session?.Connections.FirstOrDefault(c => c.ConnectionId == connectionId);
-
-        if (connection == null) return false; // Connection not found for the user
-
-        // connection id belongs to this instance => send directly
-        if (connection.InstanceId == Constants.InstanceId)
+        var env = new Envelope()
         {
-            bool invoked = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
-            return invoked;
-        }
+            ConnectionId = connectionId,
+            Payload = serialized.Payload,
+            Topic = serialized.Topic
+        };
 
-        // connection id belongs to another instance => publish message , await the response
+        await _publisher.Publish(env);
+
+
+        //ManagedHubSession? session = await _cache.GetAsync<ManagedHubSession>(userId);
+
+        //Connection? connection = session?.Connections.FirstOrDefault(c => c.ConnectionId == connectionId);
+
+        //if (connection == null) return false; // Connection not found for the user
+
+        //// connection id belongs to this instance => send directly
+        //if (connection.AppId == Constants.AppId)
+        //{
+        //    bool invoked = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
+        //    return invoked;
+        //}
+
+        //// connection id belongs to another instance => publish message , await the response
 
 
 
-        // Send to the specified connection with error handling
-        bool result = await TryInvokeClient(context, connectionId, Ser, mapping.Serialized, userId);
-        if (!result)
-            throw new Exception($"Failed to send message to connection {connectionId} for user {userId}");
+        //// Send to the specified connection with error handling
+        //bool result = await TryInvokeClient(context, connectionId, Ser, mapping.Serialized, userId);
+        //if (!result)
+        //    throw new Exception($"Failed to send message to connection {connectionId} for user {userId}");
     }
 
 

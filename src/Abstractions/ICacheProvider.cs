@@ -3,7 +3,7 @@
 /// <summary>
 /// Thread-safe cache for storing SignalR connection data
 /// </summary>
-public interface IDistributedCacheProvider
+public interface ICacheProvider
 {
     /// <summary>
     /// Retrieves a value from cache. <br />
@@ -21,7 +21,7 @@ public interface IDistributedCacheProvider
     /// <param name="key">Cache key</param>
     /// <param name="value">Value to store</param>
     /// <param name="ttl_milliseconds"></param>
-    Task SetAsync(string key, string value, int ttl_milliseconds);
+    Task SetAsync(string key, string value, int? ttl_milliseconds = null);
 
     /// <summary>
     /// Removes a value from cache <br />
@@ -30,4 +30,7 @@ public interface IDistributedCacheProvider
     /// <param name="key">Cache key</param>
     /// <returns>True if value was removed</returns>
     Task<bool> RemoveAsync(string key);
+
+    Task<String[]> Scan(string pattern);
 }
+

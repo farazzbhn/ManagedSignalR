@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<HubCommandDispatcher>();
 
         // Register the default cache provider
-        services.AddSingleton<IDistributedCacheProvider, InMemoryCacheProvider>();
+        services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
         services.AddScoped<IDistributedLockProvider, DistributedLockProvider>();
 
         // Configure SignalR

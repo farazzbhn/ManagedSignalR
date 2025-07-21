@@ -71,7 +71,7 @@ internal class ManagedHubSession
     /// A tuple where:
     /// <list type="bullet">
     /// <item><description><c>Item1</c> is the key in the format <c>"userId:connectionId"</c></description></item>
-    /// <item><description><c>Item2</c> is the value, which is the <c>InstanceId</c></description></item>
+    /// <item><description><c>Item2</c> is the value, which is the <c>AppId</c></description></item>
     /// </list>
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="session"/> is null.</exception>
@@ -85,7 +85,7 @@ internal class ManagedHubSession
             throw new ArgumentException("ConnectionId cannot be null or empty.", nameof(ConnectionId));
 
         if (string.IsNullOrWhiteSpace(InstanceId))
-            throw new ArgumentException("InstanceId cannot be null or empty.", nameof(InstanceId));
+            throw new ArgumentException("AppId cannot be null or empty.", nameof(InstanceId));
 
         string key = $"{prefix}:{UserId}:{ConnectionId}";
         string value = InstanceId;

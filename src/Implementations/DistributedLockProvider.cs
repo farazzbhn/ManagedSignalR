@@ -6,20 +6,20 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 
 
 /// <summary>
-/// A distributed lock implementation which relies on the <see cref="IDistributedCacheProvider"/> to function
+/// A distributed lock implementation which relies on the <see cref="ICacheProvider"/> to function
 /// </summary>
 internal class DistributedLockProvider : IDistributedLockProvider
 {
-    private readonly IDistributedCacheProvider _disributedCacheProvider;
+    private readonly ICacheProvider _disributedCacheProvider;
     private readonly ILogger _logger;
 
     public DistributedLockProvider
     (
-        IDistributedCacheProvider distributedCache, 
+        ICacheProvider cache, 
         ILogger logger
     )
     {
-        _disributedCacheProvider = distributedCache;
+        _disributedCacheProvider = cache;
         _logger = logger;
     }
 
@@ -29,7 +29,6 @@ internal class DistributedLockProvider : IDistributedLockProvider
     /// <param name="key"></param>
     /// <returns></returns>
     private static string KeyGen(string key) => $"msr:lock:{key}";
-
 
     public async Task<string?> AcquireAsync(string userId, TimeSpan? timeout = null)
     {
