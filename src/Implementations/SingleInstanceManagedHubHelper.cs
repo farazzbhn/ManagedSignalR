@@ -33,7 +33,7 @@ internal class SingleInstanceManagedHubHelper : ManagedHubHelper
 
         ArgumentNullException.ThrowIfNull(message);
 
-        (string Topic, string Payload) serialized = Serialize(message);
+        (string Topic, string Payload) serialized = Serialize<THub>(message);
 
         // Try to invoke the client directly
         bool result = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
@@ -67,7 +67,7 @@ internal class SingleInstanceManagedHubHelper : ManagedHubHelper
 
         // find the configuration for the hub type and serialize the message 
 
-        (string Topic, string Payload) serialized = Serialize(message);
+        (string Topic, string Payload) serialized = Serialize<THub>(message);
         // Invoke all clients concurrently
 
         IEnumerable<Task<bool>> tasks = connectionIds.Select(connId =>

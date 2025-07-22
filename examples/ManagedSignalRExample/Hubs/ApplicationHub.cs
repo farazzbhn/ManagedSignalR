@@ -10,13 +10,13 @@ public class ApplicationHub : ManagedHub
     private readonly ManagedHubHelper _helper;
 
     public ApplicationHub(
-        ManagedSignalRConfiguration configuration, 
+        ManagedSignalRConfiguration globalConfiguration, 
         HubCommandDispatcher dispatcher, 
         ILogger<ManagedHub> logger, 
         ICacheProvider cacheProvider, 
         IServiceProvider serviceProvider,
         ManagedHubHelper helper
-    ) : base(configuration, dispatcher, logger, cacheProvider, serviceProvider)
+    ) : base(globalConfiguration, dispatcher, logger, cacheProvider, serviceProvider)
     {
         _helper = helper;
     }
@@ -25,7 +25,7 @@ public class ApplicationHub : ManagedHub
     {
         var alert = new Alert()
         {
-            Content = "A new device has connected to your account. If this wasn't you, please take immediate action.",
+            Content = "A new device has connected to your account. If this wa sn't you, please take immediate action.",
             ActionLabel = "Revoke Access",
             ActionUrl = "https://yourapp.com/security/device"
         };

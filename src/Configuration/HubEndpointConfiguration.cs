@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using ManagedLib.ManagedSignalR.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
@@ -73,7 +74,8 @@ public sealed class HubEndpointConfiguration
         _inbound[configuration.Topic] = configuration;
 
         // And register the scoped handler within the service provider
-        _services.AddScoped(configuration.HandlerType);
+        //_services.AddScoped(configuration.HandlerType);
+        _services.AddScoped(typeof(IHubCommandHandler<TModel>), configuration.HandlerType);
 
         return this;
     }
@@ -93,6 +95,8 @@ public sealed class HubEndpointConfiguration
         return mapping.Deserialize(payload);
     }
 
+
+    internal IHubCommandHandler<>
 }
 
 

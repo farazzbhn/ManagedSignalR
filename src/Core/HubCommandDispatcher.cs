@@ -25,26 +25,23 @@ public sealed class HubCommandDispatcher
     /// <param name="command">The post command instance to handle.</param>
     public async Task Handle(dynamic command, HubCallerContext context, string userId)
     {
-        // Determine the type (e.g., IPostHandler<Location>
+        // Determine the type (e.g., IHubCommandHandler<Location>
         Type handlerType = typeof(IHubCommandHandler<>).MakeGenericType(command.GetType());
         
         // inject the list of registered handlers e.g., ICommandHandler<Request, Response>
-        var handlers = (IEnumerable<object>)_serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(handlerType));
+        object? handler = _serviceProvider.GetService(handlerType);
 
-        if (handlers == null) throw new ServiceNotRegisteredException(handlerType.ToString());
+        if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
 
-        foreach (var handler in handlers)
+        var handleAsyncMethod = handlerType.GetMethod("Handle");
+
+        try
         {
-            var handleAsyncMethod = handlerType.GetMethod("Handle");
-
-            try
-            {
-                await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context, userId});
-            }
-            catch (Exception exception)
-            {
-                throw new HandlerFailedException(handlerType, exception);
-            }
+            await (Task) handleAsyncMethod.Invoke(handler, new object[] { command, context, userId});
+        }
+        catch (Exception exception)
+        {
+            throw new HandlerFailedException(handlerType, exception);
         }
     }
 }

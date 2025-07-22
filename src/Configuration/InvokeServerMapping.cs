@@ -61,7 +61,6 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
                 $"Handler for '{typeof(TModel).Name}' is not registered.\n" +
                 $"You must specify a concrete handler using .UseHandler<YourHandler>() where YourHandler : IHubCommandHandler<{typeof(TModel).Name}>."
             );
-
     }
 
 }

@@ -49,7 +49,7 @@ while (true)
 
     try
     {
-        await connection.SendAsync("loc", input); // Topic-based send
+        await connection.SendAsync("InvokeServer", "loc", input); // Topic-based send
     }
     catch (Exception ex)
     {

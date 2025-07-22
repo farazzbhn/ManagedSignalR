@@ -10,7 +10,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
 
-    private readonly ManagedSignalRConfiguration _configuration;
+    private readonly ManagedSignalRConfiguration _globalConfiguration;
     private readonly HubCommandDispatcher _dispatcher;
     private readonly ILogger<ManagedHub> _logger;
     private readonly ICacheProvider _cacheProvider;
@@ -18,14 +18,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
     protected ManagedHub
     (
-        ManagedSignalRConfiguration configuration,
+        ManagedSignalRConfiguration globalConfiguration,
         HubCommandDispatcher dispatcher,
         ILogger<ManagedHub> logger, 
         ICacheProvider cacheProvider, 
         IServiceProvider serviceProvider
     )
     {
-        _configuration = configuration;
+        _globalConfiguration = globalConfiguration;
         _dispatcher = dispatcher;
         _logger = logger;
         _cacheProvider = cacheProvider;
@@ -52,7 +52,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
             (string Key, string Value) entry = session.ToCacheKeyValue();
 
-            if (_configuration.DeploymentMode == DeploymentMode.Distributed)
+            if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
             {
                 // cache the key/value pair cache using the default TTL.
                 // The mechanism allows for automatic removal of instance-bound cache entries in case the app shuts down unexpectedly
@@ -127,7 +127,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         finally
         {
             // remove the connection from the instance-bound memory cache which is used by the background service to re-cache the expiring key/value pairs
-            if (_configuration.DeploymentMode == DeploymentMode.Distributed)
+            if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
             {
                 LocalCacheProvider<CacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<CacheEntry>>();
                 bool removed = localCache.Remove(new CacheEntry(entry.Key, entry.Value));
@@ -152,14 +152,35 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// </summary>
     /// <param name="topic">Message topic for routing</param>
     /// <param name="message">Serialized message data</param>
-    internal async Task InvokeServer(string topic, string message)
+    public async Task InvokeServer(string topic, string message)
     {
-        HubEndpointConfiguration configuration = _configuration.GetConfiguration(this.GetType());
+        HubEndpointConfiguration configuration = _globalConfiguration.GetConfiguration(this.GetType());
 
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
 
         // Deserialize using configured deserializer
         dynamic command = configuration.Deserialize(topic, message);
+
+
+        var handlerType = configuration.
+        //    // Determine the type (e.g., IHubCommandHandler<Location>
+        //    Type handlerType = typeof(IHubCommandHandler<>).MakeGenericType(command.GetType());
+
+        //// inject the list of registered handlers e.g., ICommandHandler<Request, Response>
+        //object? handler = _serviceProvider.GetService(handlerType);
+
+        //if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
+
+        //var handleAsyncMethod = handlerType.GetMethod("Handle");
+
+        //try
+        //{
+        //    await (Task)handleAsyncMethod.Invoke(handler, new object[] { command, context, userId });
+        //}
+        //catch (Exception exception)
+        //{
+        //    throw new HandlerFailedException(handlerType, exception);
+        //}
 
         // Dispatch to the registered handler
         await _dispatcher.Handle(command, Context, userId);
