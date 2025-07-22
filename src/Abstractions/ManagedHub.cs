@@ -1,5 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
+using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,6 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 {
 
     private readonly ManagedSignalRConfiguration _globalConfiguration;
-    private readonly HubCommandDispatcher _dispatcher;
     private readonly ILogger<ManagedHub> _logger;
     private readonly ICacheProvider _cacheProvider;
     private readonly IServiceProvider _serviceProvider;
@@ -25,9 +25,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         IServiceProvider serviceProvider
     )
     {
-        _globalConfiguration = globalConfiguration;
-        _dispatcher = dispatcher;
         _logger = logger;
+        _globalConfiguration = globalConfiguration;
         _cacheProvider = cacheProvider;
         _serviceProvider = serviceProvider;
     }
@@ -146,7 +145,6 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     protected virtual Task OnDisconnectedHookAsync(string userId) => Task.CompletedTask;
 
 
-
     /// <summary>
     /// Invoked by the client, the method processes incoming messages and routes them to handlers
     /// </summary>
@@ -154,36 +152,31 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <param name="message">Serialized message data</param>
     public async Task InvokeServer(string topic, string message)
     {
-        HubEndpointConfiguration configuration = _globalConfiguration.GetConfiguration(this.GetType());
+        HubEndpointConfiguration configuration = _globalConfiguration.GetHubEndpointConfiguration(this.GetType());
 
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
 
         // Deserialize using configured deserializer
         dynamic command = configuration.Deserialize(topic, message);
 
+        // retrieve the specified handler type from the configuration
+        Type handlerType = configuration.GetHandlerType(topic);
 
-        var handlerType = configuration.
-        //    // Determine the type (e.g., IHubCommandHandler<Location>
-        //    Type handlerType = typeof(IHubCommandHandler<>).MakeGenericType(command.GetType());
+        // and get from the service provider
+        object? handler = _serviceProvider.GetService(handlerType);
 
-        //// inject the list of registered handlers e.g., ICommandHandler<Request, Response>
-        //object? handler = _serviceProvider.GetService(handlerType);
+        if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
 
-        //if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
+        var handleAsyncMethod = handlerType.GetMethod("Handle");
 
-        //var handleAsyncMethod = handlerType.GetMethod("Handle");
+        try
+        {
+            await (Task)handleAsyncMethod.Invoke(handler, new object[] { command, Context, userId });
+        }
+        catch (Exception exception)
+        {
+            throw new HandlerFailedException(handlerType, exception);
+        }
 
-        //try
-        //{
-        //    await (Task)handleAsyncMethod.Invoke(handler, new object[] { command, context, userId });
-        //}
-        //catch (Exception exception)
-        //{
-        //    throw new HandlerFailedException(handlerType, exception);
-        //}
-
-        // Dispatch to the registered handler
-        await _dispatcher.Handle(command, Context, userId);
     }
-
 }

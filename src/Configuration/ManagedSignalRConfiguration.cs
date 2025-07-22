@@ -67,7 +67,7 @@ public class ManagedSignalRConfiguration
     /// <returns>Hub configuration</returns>
     /// <exception cref="MissingConfigurationException">configuration not found</exception>
     /// <exception cref="InvalidOperationException">invalid input type</exception>
-    internal HubEndpointConfiguration GetConfiguration(Type type)
+    internal HubEndpointConfiguration GetHubEndpointConfiguration(Type type)
     {
         if (!typeof(ManagedHub).IsAssignableFrom(type))
             throw new InvalidOperationException($"Type {type.FullName} is not a valid ManagedHub type.");

@@ -60,7 +60,7 @@ public abstract class ManagedHubHelper
     /// <returns>A tuple containing the topic and the serialized payload.</returns>
     protected (string Topic, string Payload) Serialize<THub>(dynamic message) where THub : ManagedHub
     {
-        HubEndpointConfiguration config = _configuration.GetConfiguration(typeof(THub));
+        HubEndpointConfiguration config = _configuration.GetHubEndpointConfiguration(typeof(THub));
         (string Topic, string Payload) serialized = config.Serialize(message);
         return (serialized.Topic, serialized.Payload);
     }

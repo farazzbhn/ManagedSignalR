@@ -74,8 +74,7 @@ public sealed class HubEndpointConfiguration
         _inbound[configuration.Topic] = configuration;
 
         // And register the scoped handler within the service provider
-        //_services.AddScoped(configuration.HandlerType);
-        _services.AddScoped(typeof(IHubCommandHandler<TModel>), configuration.HandlerType);
+        _services.AddScoped(configuration.HandlerType);
 
         return this;
     }
@@ -90,13 +89,24 @@ public sealed class HubEndpointConfiguration
     internal dynamic Deserialize(string topic, string payload)
     {
         if (!_inbound.TryGetValue(topic, out var mapping))
-            throw new MissingConfigurationException($"No configuration found for topic {topic}. Please ensure it is registered with ConfigureInvokeClient<TModel>() method.");
+            throw new MissingConfigurationException($"No configuration found for topic {topic}. Please ensure it is registered with ConfigureInvokeServer<TModel>() method.");
 
         return mapping.Deserialize(payload);
     }
 
 
-    internal IHubCommandHandler<>
+    internal Type GetHandlerType(string topic)
+    {
+        if (!_inbound.TryGetValue(topic, out var mapping))
+            throw new MissingConfigurationException($"No configuration found for topic {topic}. Please ensure it is registered with ConfigureInvokeServer<TModel>() method.");
+
+        var type = mapping.HandlerType ?? throw new MisconfiguredException(
+            $"Handler type not specified for topic {topic}. Please call UseHandler() to register the respective handler");
+
+        return type;
+
+    }
+
 }
 
 
