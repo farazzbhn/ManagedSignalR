@@ -41,7 +41,7 @@ public sealed class InvokeClientMapping<TModel> : InvokeClientMapping
     /// Ensures that the current mapping configuration is complete and valid.
     /// </summary>
     /// <exception cref="MisconfiguredException"></exception>
-    public void EnsureConfigured()
+    internal void EnsureIsValid()
     {
         if (string.IsNullOrWhiteSpace(Topic))
             throw new MisconfiguredException(

@@ -2,6 +2,7 @@
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
+using ManagedLib.ManagedSignalR.Types;
 using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
@@ -9,16 +10,22 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 internal class DistributedManagedHubHelper : ManagedHubHelper
 {
     private readonly ICacheProvider _cacheProvider;
+    private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
+    private readonly IEnvelopePublishEndpoint _publishEndpoint;
 
     public DistributedManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        ICacheProvider cacheProvider
+        ICacheProvider cacheProvider,
+        LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider, 
+        IEnvelopePublishEndpoint publishEndpoint
     ) : base(logger, serviceProvider, configuration)
     {
         _cacheProvider = cacheProvider;
+        _localCacheProvider = localCacheProvider;
+        _publishEndpoint = publishEndpoint;
     }
 
 
@@ -32,12 +39,28 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
 
         (string Topic, string Payload) serialized = Serialize(message);
 
-        // Try to invoke the client directly
-        bool result = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
+        // decide if the connection belongs to this very instance 
+        bool owned = _localCacheProvider.List().Any(x => x.Session.ConnectionId == connectionId);
 
-        if (!result)
+        // the connection id belongs to this very instance => Try to invoke the client directly 
+        if (owned)
         {
-            Logger.LogWarning("Failed to send message to connection '{ConnectionId}'", connectionId);
+            bool result = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
+
+            if (!result)
+            {
+                Logger.LogWarning("Failed to send message to connection '{ConnectionId}'", connectionId);
+            }
+            return;
+        }
+        else // the connection belongs to another instance of the application
+        {
+            var envelope = new Envelope()
+            {
+                ConnectionId = connectionId,
+                Payload = serialized.Payload,
+                Topic = serialized.Topic,
+            };
         }
     }
 

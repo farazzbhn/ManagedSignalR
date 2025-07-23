@@ -9,6 +9,43 @@ using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
+
+/// <summary>
+/// A helper class for managing SignalR hubs in a single-instance architecture.
+/// <para>
+/// This class extends <see cref="ManagedHubHelper"/> and facilitates sending messages to clients
+/// by connection ID or user ID within a single-instance SignalR server environment.
+/// </para>
+/// </summary>
+/// <remarks>
+/// <para><b>Architecture:</b></para>
+/// <para>
+/// In a single-instance setup, all relevant state such as client connections, sessions, and
+/// message routing information is stored locally within the server process. This means:
+/// </para>
+/// <list type="bullet">
+///   <item><description>There is no distributed cache or external session store involved.</description></item>
+///   <item><description>Cache keys and session data are maintained in-process or in local memory cache.</description></item>
+///   <item><description>Message dispatching targets clients connected to this single instance only.</description></item>
+///   <item><description>This design avoids complexities of cross-instance synchronization or message forwarding.</description></item>
+/// </list>
+/// <para>
+/// This simplifies the implementation but also means the architecture is suited for scenarios
+/// where scaling out (multiple server instances) is not required or handled separately.
+/// </para>
+/// <para><b>Presumptions and dependencies:</b></para>
+/// <list type="bullet">
+///   <item><description>Relies on <see cref="ICacheProvider"/> to track connection/session keys locally.</description></item>
+///   <item><description>Sessions are created from locally cached keys following a specific naming convention.</description></item>
+///   <item><description>Uses logging and serialization services inherited from <see cref="ManagedHubHelper"/>.</description></item>
+/// </list>
+/// <para><b>Main responsibilities:</b></para>
+/// <list type="bullet">
+///   <item><description>Sending messages to clients by connection ID or user ID within the single instance.</description></item>
+///   <item><description>Performing local cache scans to find all connections related to a user.</description></item>
+///   <item><description>Logging the results of message delivery attempts for monitoring and troubleshooting.</description></item>
+/// </list>
+/// </remarks>
 internal class SingleInstanceManagedHubHelper : ManagedHubHelper
 {
     private readonly ICacheProvider _cacheProvider;

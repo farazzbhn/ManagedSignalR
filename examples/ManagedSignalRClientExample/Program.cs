@@ -19,6 +19,12 @@ connection.On<string, string>("InvokeClient", (topic, payload) =>
             Console.WriteLine($"[alert] Message: {alert?.Content}");
             break;
 
+
+        case "msg":
+            var msg = System.Text.Json.JsonSerializer.Deserialize<Message>(payload);
+            Console.WriteLine($"[message] Message: {msg?.Text}");
+            break;
+
         default:
             Console.WriteLine($"[unknown topic] {topic} => {payload}");
             break;

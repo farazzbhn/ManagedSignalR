@@ -3,6 +3,7 @@ using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
@@ -24,11 +25,9 @@ public static class ServiceCollectionExtensions
         Action<ManagedSignalRConfiguration> configurer
     )
     {
-
         // Create and configure the hub configuration
         var configuration = new ManagedSignalRConfiguration(services);
         configurer.Invoke(configuration);
-
 
         if (configuration.DeploymentMode is null)
         {
@@ -46,7 +45,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
 
             // local cache provider is used to persist instance-bound data to be used locally
-            services.AddScoped<LocalCacheProvider<CacheEntry>>();
+            services.AddScoped<LocalCacheProvider<ManagedHubSessionCacheEntry>>();
 
             // register the cache entry background service to re-cache instance-bound connection data before they expire
             services.AddHostedService<CacheEntryBackgroundService>();
@@ -54,13 +53,14 @@ public static class ServiceCollectionExtensions
         else // if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
         {
 
-            // register the single-instance managed hub helper
-            services.AddScoped<ManagedHubHelper, SingleInstanceManagedHubHelper>();
-
-            // use in-memory cache for single-instance setup
+            // In-memory cache is used to store connection data LOCALLY
             services.AddMemoryCache(); 
             services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
+
+            // register the single-instance managed hub helper
+            services.AddScoped<ManagedHubHelper, SingleInstanceManagedHubHelper>();
         }
+
 
 
         // Register the configuration as a singleton
@@ -68,9 +68,22 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<HubCommandDispatcher>();
 
         // Configure SignalR
-        services.AddSignalR(options => 
+        services.AddSignalR(options =>
         {
-            options.EnableDetailedErrors = true;
+            if (configuration.EnableDetailedErrors.HasValue)
+            {
+                options.EnableDetailedErrors = configuration.EnableDetailedErrors.Value;
+            }
+
+            if (configuration.KeepAliveInterval.HasValue)
+            {
+                options.KeepAliveInterval = TimeSpan.FromSeconds(configuration.KeepAliveInterval.Value);
+            }
+
+            if (configuration.SupportedProtocols is not null && configuration.SupportedProtocols.Count > 0)
+            {
+                options.SupportedProtocols = configuration.SupportedProtocols;
+            }
         });
 
         return services;

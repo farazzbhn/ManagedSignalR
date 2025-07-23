@@ -16,13 +16,9 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     private readonly ICacheProvider _cacheProvider;
     private readonly IServiceProvider _serviceProvider;
 
-    private static int connectedcount = 0;
-    private static int disconnectedCount = 0;
-
     protected ManagedHub
     (
         ManagedSignalRConfiguration globalConfiguration,
-        HubCommandDispatcher dispatcher,
         ILogger<ManagedHub> logger, 
         ICacheProvider cacheProvider, 
         IServiceProvider serviceProvider
@@ -40,9 +36,6 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnConnectedHookAsync"/> to execute custom logic when a client connects. <br/></remarks>
     public sealed override async Task OnConnectedAsync()
     {
-        connectedcount += 1;
-
-
         await base.OnConnectedAsync();
 
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
@@ -64,15 +57,15 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
                 await _cacheProvider.SetAsync(entry.Key, entry.Value, Constants.ManagedHubSessionCacheTtl);
 
                 // caching the object locally allows for a background process to re-set the cache once it has been expired
-                LocalCacheProvider<CacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<CacheEntry>>();
-                localCache.Set(new CacheEntry(entry.Key, entry.Value));
+                LocalCacheProvider<ManagedHubSessionCacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<ManagedHubSessionCacheEntry>>();
+                localCache.Set(new ManagedHubSessionCacheEntry(entry.Key, entry.Value));
             }
             else // is a single instance application 
             {
                 // values set within the instance-bound memory cache need not expire
                 await _cacheProvider.SetAsync(entry.Key, entry.Value);
 
-                // no need to cache keys using teh local cache provider. ( no background service required to re-cache expiring key/value pairs)
+                // no need to cache keys using the local cache provider. ( no background service required to re-cache expiring key/value pairs)
             }
 
         }
@@ -99,18 +92,12 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
     public sealed override async Task OnDisconnectedAsync(Exception? exception)
     {
-        disconnectedCount += 1;
-
-
         await base.OnDisconnectedAsync(exception);
 
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         string? connectionId = Context.ConnectionId;
 
         (string Key, string Value) entry = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId).ToCacheKeyValue();
-
-        // invoke the hook
-        await OnDisconnectedHookAsync(userId);
 
         try
         {
@@ -135,10 +122,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             // remove the connection from the instance-bound memory cache which is used by the background service to re-cache the expiring key/value pairs
             if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
             {
-                LocalCacheProvider<CacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<CacheEntry>>();
-                bool removed = localCache.Remove(new CacheEntry(entry.Key, entry.Value));
+                LocalCacheProvider<ManagedHubSessionCacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<ManagedHubSessionCacheEntry>>();
+                bool removed = localCache.Remove(new ManagedHubSessionCacheEntry(entry.Key, entry.Value));
             }
+            // nothing else to remove for Single-instance connections
         }
+
+        // invoke the hook
+        await OnDisconnectedHookAsync(userId);
     }
 
     /// <summary>
@@ -159,17 +150,18 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <param name="message">Serialized message data</param>
     public async Task InvokeServer(string topic, string message)
     {
-        HubEndpointConfiguration configuration = _globalConfiguration.GetHubEndpointConfiguration(this.GetType());
+        HubEndpointOptions options = _globalConfiguration.GetHubEndpointOptions(this.GetType());
 
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
 
         // Deserialize using configured deserializer
-        dynamic command = configuration.Deserialize(topic, message);
+        dynamic command = options.Deserialize(topic, message);
 
         // retrieve the specified handler type from the configuration
-        Type handlerType = configuration.GetHandlerType(topic);
+        Type handlerType = options.GetHandlerType(topic);
 
         // and get from the service provider
+        // handler is an implementation of IHubCommandHandler<>
         object? handler = _serviceProvider.GetService(handlerType);
 
         if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
@@ -184,8 +176,5 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         {
             throw new HandlerFailedException(handlerType, exception);
         }
-
-
-        Console.WriteLine($"Connected {connectedcount} |||| Disconnected {disconnectedCount}");
     }
 }

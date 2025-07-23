@@ -14,13 +14,13 @@ namespace ManagedLib.ManagedSignalR.Core;
 /// </summary>
 internal class CacheEntryBackgroundService : BackgroundService
 {
-    private readonly LocalCacheProvider<CacheEntry> _localCacheProvider;
+    private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
     private readonly ICacheProvider _cacheProvider;
     private readonly ILogger _logger;
 
 public CacheEntryBackgroundService
 (
-    LocalCacheProvider<CacheEntry> localCacheProvider,
+    LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider,
     ICacheProvider cacheProvider,
     ILogger<CacheEntryBackgroundService> logger
 )
@@ -34,7 +34,7 @@ public CacheEntryBackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            List<CacheEntry> entries = _localCacheProvider.List();
+            List<ManagedHubSessionCacheEntry> entries = _localCacheProvider.List();
             foreach (var entry in entries)
             {
                 try

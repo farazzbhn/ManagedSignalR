@@ -20,7 +20,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// <b>Required</b> —
     /// Sets the topic for incoming messages
     /// </summary>
-    public InvokeServerMapping<TModel> FromTopic(string topic)
+    public InvokeServerMapping<TModel> OnTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -49,7 +49,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// Ensures that the current mapping configuration is complete and valid.
     /// </summary>
     /// <exception cref="MisconfiguredException"></exception>
-    public void EnsureConfigured()
+    internal void EnsureIsValid()
     {
         if (string.IsNullOrWhiteSpace(Topic))
             throw new MisconfiguredException(

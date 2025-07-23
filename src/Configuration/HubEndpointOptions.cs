@@ -5,17 +5,20 @@ using ManagedLib.ManagedSignalR.Types.Exceptions;
 namespace ManagedLib.ManagedSignalR.Configuration;
 
 
-public sealed class HubEndpointConfiguration
+public sealed class HubEndpointOptions
 {
     private readonly IServiceCollection _services;
+    private readonly ManagedSignalRConfiguration Parent;
 
-    public HubEndpointConfiguration
+    public HubEndpointOptions
     (
         Type hubType,
+        ManagedSignalRConfiguration parent,
         IServiceCollection services
     )
     {
         HubType = hubType;
+        Parent = parent;
         _services = services;
         _inbound = new();
         _outbound = new();
@@ -27,30 +30,31 @@ public sealed class HubEndpointConfiguration
     /// </summary>
     internal Type HubType { get; set; }
 
-
     private Dictionary<string, InvokeServerMapping> _inbound { get ; set; } 
 
     private Dictionary<Type, InvokeClientMapping> _outbound { get; set; } 
 
 
+
+
     /// <summary>
     /// Configures how messages are sent to clients
     /// </summary>
-    /// <typeparam name="T">Message type to send</typeparam>
+    /// <typeparam name="TOutboundMessage">Message type to send</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public HubEndpointConfiguration ConfigureInvokeClient<T>(Action<InvokeClientMapping<T>> configurer)
+    public HubEndpointOptions ConfigureInvokeClient<TOutboundMessage>(Action<InvokeClientMapping<TOutboundMessage>> configurer)
     {
         
-        var configuration = new InvokeClientMapping<T>();
+        var configuration = new InvokeClientMapping<TOutboundMessage>();
 
         configurer.Invoke(configuration);
 
 
-        configuration.EnsureConfigured();
+        configuration.EnsureIsValid();
 
 
         // a C# type is bound to a topic/serializer
-        _outbound[typeof(T)] = configuration;
+        _outbound[typeof(TOutboundMessage)] = configuration;
 
         return this;
     }
@@ -58,17 +62,17 @@ public sealed class HubEndpointConfiguration
     /// <summary>
     /// Configures how messages are received from clients
     /// </summary>
-    /// <typeparam name="TModel">Message type to receive</typeparam>
+    /// <typeparam name="TInboundMessage">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public HubEndpointConfiguration ConfigureInvokeServer<TModel>(Action<InvokeServerMapping<TModel>> configurer)
+    public HubEndpointOptions ConfigureInvokeServer<TInboundMessage>(Action<InvokeServerMapping<TInboundMessage>> configurer)
     {
 
-        var configuration = new InvokeServerMapping<TModel>();
+        var configuration = new InvokeServerMapping<TInboundMessage>();
 
         configurer.Invoke(configuration);
         
 
-        configuration.EnsureConfigured();
+        configuration.EnsureIsValid();
 
         // a string (topic) is bound to a  C# type/deserializer
         _inbound[configuration.Topic] = configuration;
@@ -106,6 +110,13 @@ public sealed class HubEndpointConfiguration
         return type;
 
     }
+
+    /// <summary>
+    /// Returns to the parent <see cref="ManagedSignalRConfiguration"/> builder
+    /// to allow configuring additional hubs or global settings.
+    /// </summary>
+    /// <returns>The parent <see cref="ManagedSignalRConfiguration"/> instance for fluent chaining.</returns>
+    public ManagedSignalRConfiguration And() => Parent;
 
 }
 

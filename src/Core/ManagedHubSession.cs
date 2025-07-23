@@ -17,7 +17,7 @@ internal class ManagedHubSession
     /// <summary>
     /// Gets or sets the SignalR connection identifier for the session.
     /// </summary>
-    internal string ConnectionId { get; private set; }
+    internal string ConnectionId { get; private set; } 
 
     /// <summary>
     /// Gets or sets the instance identifier associated with the session (usually the cache value).
