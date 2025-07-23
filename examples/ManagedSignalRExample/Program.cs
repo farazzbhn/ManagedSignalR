@@ -26,7 +26,7 @@ builder.Services.AddManagedSignalR(builder =>
                 .ConfigureInvokeServer<Coordinates>(cfg =>
                     cfg
                         .FromTopic("loc")
-                        // coordinates are sent as "lat,long" string 
+                        // coordinates are expected as "lat,long" string 
                         .UseDeserializer(str =>
                         {
                             string[] split = str.Split(',');

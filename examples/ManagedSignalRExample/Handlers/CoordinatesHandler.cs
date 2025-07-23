@@ -1,5 +1,4 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedSignalRExample.Hubs;
 using ManagedSignalRExample.Models;
 using Microsoft.AspNetCore.SignalR;
 
@@ -19,7 +18,13 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
         var latitude = request.Latitude;
         var longitude = request.Longitude;
 
-        Console.WriteLine($"[CoordinatesHandler] User ID: {userId}, Connection ID: {connectionId}, Coordinates: {latitude}, {longitude}");
+        //Console.WriteLine(
+        //    $"{nameof(CoordinatesHandler)}\n" +
+        //    $"\tUser : {userId}\n" +
+        //    $"\tConnection ID: {connectionId}\n" +
+        //    $"\tCoordinates: {latitude}, {longitude}"+
+        //    $"\n\n" 
+        //);
 
         await Task.CompletedTask; // Placeholder for real async work
     }

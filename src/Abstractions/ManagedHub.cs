@@ -16,6 +16,9 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     private readonly ICacheProvider _cacheProvider;
     private readonly IServiceProvider _serviceProvider;
 
+    private static int connectedcount = 0;
+    private static int disconnectedCount = 0;
+
     protected ManagedHub
     (
         ManagedSignalRConfiguration globalConfiguration,
@@ -37,6 +40,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnConnectedHookAsync"/> to execute custom logic when a client connects. <br/></remarks>
     public sealed override async Task OnConnectedAsync()
     {
+        connectedcount += 1;
+
 
         await base.OnConnectedAsync();
 
@@ -94,6 +99,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
     public sealed override async Task OnDisconnectedAsync(Exception? exception)
     {
+        disconnectedCount += 1;
+
 
         await base.OnDisconnectedAsync(exception);
 
@@ -178,5 +185,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
             throw new HandlerFailedException(handlerType, exception);
         }
 
+
+        Console.WriteLine($"Connected {connectedcount} |||| Disconnected {disconnectedCount}");
     }
 }
