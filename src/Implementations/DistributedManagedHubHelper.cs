@@ -55,12 +55,25 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         }
         else // the connection belongs to another instance of the application
         {
-            var envelope = new Envelope()
+            string[] keys = await _cacheProvider.ScanAsync($"msr:*:{connectionId}");
+
+            if (keys.Any())
             {
-                ConnectionId = connectionId,
-                Payload = serialized.Payload,
-                Topic = serialized.Topic,
-            };
+                var envelope = new Envelope()
+                {
+                    ConnectionId = connectionId,
+                    Payload = serialized.Payload,
+                    Topic = serialized.Topic,
+                    InstanceId = "dsa"
+                };
+                    
+
+            }
+            else
+            {
+                Logger.LogWarning("Failed to send message to connection '{ConnectionId}'", connectionId);
+
+            }
         }
     }
 
