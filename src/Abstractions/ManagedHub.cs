@@ -13,21 +13,21 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
     private readonly ManagedSignalRConfiguration _globalConfiguration;
     private readonly ILogger<ManagedHub> _logger;
-    private readonly IDistributedCacheProvider _cacheProvider;
     private readonly IServiceProvider _serviceProvider;
-
-    protected ManagedHub
+    private readonly LocalCacheProvider<ManagedHubSession> _localCache;
+    internal ManagedHub
     (
         ManagedSignalRConfiguration globalConfiguration,
         ILogger<ManagedHub> logger, 
         IDistributedCacheProvider cacheProvider, 
-        IServiceProvider serviceProvider
+        IServiceProvider serviceProvider, 
+        LocalCacheProvider<ManagedHubSession> localCache
     )
     {
         _logger = logger;
         _globalConfiguration = globalConfiguration;
-        _cacheProvider = cacheProvider;
         _serviceProvider = serviceProvider;
+        _localCache = localCache;
     }
 
     /// <summary>
@@ -41,31 +41,26 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
         string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
         string connectionId = Context.ConnectionId;
 
+        // create the session and the respective cache entry  object
         // Try & associate the connection ID with the cached user session.
+        var session = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId);
+
+        // store the session information locally to be accessed later
+        _localCache.Add(session);
+
         try
         {
-            // create the session and the respective cache entry  object
-            var session = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId);
-
-            (string Key, string Value) entry = session.ToCacheKeyValue();
-
             if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
             {
+                // create the key value set for the sesion
+                (string Key, string Value) entry = session.ToCacheKeyValue();
+
+                IDistributedCacheProvider distributedCache = _serviceProvider.GetRequiredService<IDistributedCacheProvider>();
+
                 // cache the key/value pair cache using the default TTL.
                 // The mechanism allows for automatic removal of instance-bound cache entries in case the app shuts down unexpectedly
                 // A background service is then used to re-cache this entries before they fail
-                await _cacheProvider.SetAsync(entry.Key, entry.Value, Constants.ManagedHubSessionCacheTtl);
-
-                // caching the object locally allows for a background process to re-set the cache once it has been expired
-                LocalCacheProvider<ManagedHubSessionCacheEntry> localCache = _serviceProvider.GetRequiredService<LocalCacheProvider<ManagedHubSessionCacheEntry>>();
-                localCache.Set(new ManagedHubSessionCacheEntry(entry.Key, entry.Value));
-            }
-            else // is a single instance application 
-            {
-                // values set within the instance-bound memory cache need not expire
-                await _cacheProvider.SetAsync(entry.Key, entry.Value);
-
-                // no need to cache keys using the local cache provider. ( no background service required to re-cache expiring key/value pairs)
+                await distributedCache.SetAsync(entry.Key, entry.Value, Constants.ManagedHubSessionCacheTtl);
             }
 
         }
@@ -99,11 +94,13 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         (string Key, string Value) entry = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId).ToCacheKeyValue();
 
+
+        bool removed = await _cacheProvider.RemoveAsync(entry.Key);
+
         try
         {
 
             // try remove from the cache. 
-            bool removed = await _cacheProvider.RemoveAsync(entry.Key);
 
             if (!removed) 
             {
