@@ -13,14 +13,14 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
     private readonly ManagedSignalRConfiguration _globalConfiguration;
     private readonly ILogger<ManagedHub> _logger;
-    private readonly ICacheProvider _cacheProvider;
+    private readonly IDistributedCacheProvider _cacheProvider;
     private readonly IServiceProvider _serviceProvider;
 
     protected ManagedHub
     (
         ManagedSignalRConfiguration globalConfiguration,
         ILogger<ManagedHub> logger, 
-        ICacheProvider cacheProvider, 
+        IDistributedCacheProvider cacheProvider, 
         IServiceProvider serviceProvider
     )
     {

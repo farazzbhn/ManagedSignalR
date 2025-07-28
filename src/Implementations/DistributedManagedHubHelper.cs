@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using ManagedLib.ManagedSignalR.Abstractions;
+﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types;
@@ -9,7 +8,7 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 
 internal class DistributedManagedHubHelper : ManagedHubHelper
 {
-    private readonly ICacheProvider _cacheProvider;
+    private readonly IDistributedCacheProvider _cacheProvider;
     private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
     private readonly IEnvelopePublishEndpoint _publishEndpoint;
 
@@ -18,7 +17,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        ICacheProvider cacheProvider,
+        IDistributedCacheProvider cacheProvider,
         LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider, 
         IEnvelopePublishEndpoint publishEndpoint
     ) : base(logger, serviceProvider, configuration)
@@ -28,6 +27,18 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         _publishEndpoint = publishEndpoint;
     }
 
+    public async Task SendToConnectionId<THub>(string userId, string connectionId, dynamic message)
+    {
+        // Input validation
+        if (string.IsNullOrWhiteSpace(connectionId))
+            throw new ArgumentNullException(nameof(connectionId));
+
+        ArgumentNullException.ThrowIfNull(message);
+
+        (string Topic, string Payload) serialized = Serialize(message);
+
+        bool owned = _localCacheProvider.List().Any(x => x.Session.ConnectionId == connectionId);
+    }
 
     public override async Task SendToConnectionId<THub>(string connectionId, dynamic message)
     {
@@ -66,7 +77,6 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
                     Topic = serialized.Topic,
                     InstanceId = "dsa"
                 };
-                    
 
             }
             else

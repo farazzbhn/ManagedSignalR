@@ -15,13 +15,13 @@ namespace ManagedLib.ManagedSignalR.Core;
 internal class CacheEntryBackgroundService : BackgroundService
 {
     private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
-    private readonly ICacheProvider _cacheProvider;
+    private readonly IDistributedCacheProvider _cacheProvider;
     private readonly ILogger _logger;
 
 public CacheEntryBackgroundService
 (
     LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider,
-    ICacheProvider cacheProvider,
+    IDistributedCacheProvider cacheProvider,
     ILogger<CacheEntryBackgroundService> logger
 )
 {

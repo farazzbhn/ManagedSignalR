@@ -5,8 +5,10 @@
 /// Represents a managed session for a SignalR hub connection,
 /// including the user ID, connection ID, and the associated instance ID.
 /// </summary>
-internal class ManagedHubSession
+internal record ManagedHubSession
 {
+
+
     private const string prefix = "msr";
 
     /// <summary>
@@ -27,6 +29,15 @@ internal class ManagedHubSession
 
     internal ManagedHubSession(string userId, string connectionId, string instanceId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId cannot be null or empty.", nameof(UserId));
+
+        if (string.IsNullOrWhiteSpace(connectionId))
+            throw new ArgumentException("ConnectionId cannot be null or empty.", nameof(ConnectionId));
+
+        if (string.IsNullOrWhiteSpace(instanceId))
+            throw new ArgumentException("AppId cannot be null or empty.", nameof(InstanceId));
+
         UserId = userId;
         ConnectionId = connectionId;
         InstanceId = instanceId;
@@ -78,20 +89,18 @@ internal class ManagedHubSession
     /// <exception cref="ArgumentException">Thrown if <paramref name="session"/> has any null or empty required properties.</exception>
     internal (string Key, string Value) ToCacheKeyValue()
     {
-        if (string.IsNullOrWhiteSpace(UserId))
-            throw new ArgumentException("UserId cannot be null or empty.", nameof(UserId));
-
-        if (string.IsNullOrWhiteSpace(ConnectionId))
-            throw new ArgumentException("ConnectionId cannot be null or empty.", nameof(ConnectionId));
-
-        if (string.IsNullOrWhiteSpace(InstanceId))
-            throw new ArgumentException("AppId cannot be null or empty.", nameof(InstanceId));
-
-        string key = $"{prefix}:{UserId}:{ConnectionId}";
-        string value = InstanceId;
-
-        return (key, value);
+        if (Key is null)
+        {
+            Key = $"{prefix}:{UserId}:{ConnectionId}";
+            Value = InstanceId;
+        }
+        return (Key!, Value!);
     }
+
+
+    private string? Key { get; set; } = null;
+    private string? Value { get; set; } = null;
+
 
 
 }

@@ -7,10 +7,10 @@ using System.Text.RegularExpressions;
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Thread-safe in-memory implementation of <see cref="ICacheProvider"/> using Microsoft's <see cref="IMemoryCache"/>.
+/// Thread-safe in-memory implementation of <see cref="IDistributedCacheProvider"/> using Microsoft's <see cref="IMemoryCache"/>.
 /// Supports TTL (Time-To-Live in milliseconds) via absolute expiration and key scanning via a tracked key registry.
 /// </summary>
-public class InMemoryCacheProvider : ICacheProvider
+public class InMemoryCacheProvider : IDistributedCacheProvider
 {
     private readonly IMemoryCache _cache;
 

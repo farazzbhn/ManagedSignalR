@@ -38,28 +38,28 @@ public static class ServiceCollectionExtensions
         }
         else if (configuration.DeploymentMode is DeploymentMode.Distributed)
         {
-            // use the distributed managed hub helper
+            // Register the distributed managed hub helper
             services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
 
-            // use redis for multi-instance cache
-            services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
+            // In distributed mode, we use a distributed cache provider to store connection data across instances
+            services.AddScoped<IDistributedCacheProvider, RedisCacheProvider>();
 
-            // local cache provider is used to persist instance-bound data to be used locally
-            services.AddScoped<LocalCacheProvider<ManagedHubSessionCacheEntry>>();
-
-            // register the cache entry background service to re-cache instance-bound connection data before they expire
+            // Register the cache entry background service to periodically re-instate expiring cache entries
             services.AddHostedService<CacheEntryBackgroundService>();
         }
         else // if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
         {
 
-            // In-memory cache is used to store connection data LOCALLY
-            services.AddMemoryCache(); 
-            services.AddSingleton<ICacheProvider, InMemoryCacheProvider>();
-
-            // register the single-instance managed hub helper
+            // register the single-instance managed hub helper whic works without a distributed cache 
+            // using the local memory cache
             services.AddScoped<ManagedHubHelper, SingleInstanceManagedHubHelper>();
+
+            // NO implementation of IDistributedCacheProvider is needed in single instance mode
+            // NO cache entry background service is needed either ( cache entries do not expire in single instance mode )
         }
+
+        // register the local cache provider to store connection data for this instance in memory
+        services.AddScoped<LocalCacheProvider<ManagedHubSession>>();
 
 
 

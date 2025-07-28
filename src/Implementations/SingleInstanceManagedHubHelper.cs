@@ -35,7 +35,7 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// </para>
 /// <para><b>Presumptions and dependencies:</b></para>
 /// <list type="bullet">
-///   <item><description>Relies on <see cref="ICacheProvider"/> to track connection/session keys locally.</description></item>
+///   <item><description>Relies on <see cref="IDistributedCacheProvider"/> to track connection/session keys locally.</description></item>
 ///   <item><description>Sessions are created from locally cached keys following a specific naming convention.</description></item>
 ///   <item><description>Uses logging and serialization services inherited from <see cref="ManagedHubHelper"/>.</description></item>
 /// </list>
@@ -48,14 +48,14 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// </remarks>
 internal class SingleInstanceManagedHubHelper : ManagedHubHelper
 {
-    private readonly ICacheProvider _cacheProvider;
+    private readonly IDistributedCacheProvider _cacheProvider;
 
     public SingleInstanceManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        ICacheProvider cacheProvider
+        IDistributedCacheProvider cacheProvider
     ) : base(logger, serviceProvider, configuration)
     {
         _cacheProvider = cacheProvider;
@@ -103,12 +103,10 @@ internal class SingleInstanceManagedHubHelper : ManagedHubHelper
 
 
         // find the configuration for the hub type and serialize the message 
-
         (string Topic, string Payload) serialized = Serialize<THub>(message);
-        // Invoke all clients concurrently
 
-        IEnumerable<Task<bool>> tasks = connectionIds.Select(connId =>
-            TryInvokeClient<THub>(connId, serialized.Topic, serialized.Payload));
+        // Invoke all clients concurrently
+        IEnumerable<Task<bool>> tasks = connectionIds.Select(connId => TryInvokeClient<THub>(connId, serialized.Topic, serialized.Payload));
 
         bool[] results = await Task.WhenAll(tasks);
 

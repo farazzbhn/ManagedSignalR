@@ -3,7 +3,7 @@
 /// <summary>
 /// Thread-safe cache for storing SignalR connection data
 /// </summary>
-public interface ICacheProvider
+public interface IDistributedCacheProvider
 {
     /// <summary>
     /// Retrieves a value from cache. <br />

@@ -5,10 +5,10 @@ using System.Text.RegularExpressions;
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Redis-based implementation of <see cref="ICacheProvider"/>.
+/// Redis-based implementation of <see cref="IDistributedCacheProvider"/>.
 /// Supports TTL (Time-To-Live in milliseconds) via key expiration and pattern-based scanning.
 /// </summary>
-public class RedisCacheProvider : ICacheProvider
+public class RedisCacheProvider : IDistributedCacheProvider
 {
     private readonly IDatabase _db;
     private readonly IServer _server;
