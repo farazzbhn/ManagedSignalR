@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
 
             // In distributed mode, we use a distributed cache provider to store connection data across instances
-            services.AddScoped<IDistributedCacheProvider, RedisCacheProvider>();
+            services.AddScoped<IDistributedCache, RedisCache>();
 
             // Register the cache entry background service to periodically re-instate expiring cache entries
             services.AddHostedService<CacheEntryBackgroundService>();
@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
         }
 
         // register the local cache provider to store connection data for this instance in memory
-        services.AddScoped<LocalCacheProvider<ManagedHubSession>>();
+        services.AddScoped<MemoryCache<ManagedHubSession>>();
 
 
 

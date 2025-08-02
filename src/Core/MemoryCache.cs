@@ -2,7 +2,7 @@
 
 using System.Collections.Concurrent;
 
-public class LocalCacheProvider<T>
+public class MemoryCache<T>
 {
     private readonly ConcurrentBag<T> _list = new();
 

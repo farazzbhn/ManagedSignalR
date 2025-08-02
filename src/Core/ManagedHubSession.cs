@@ -87,7 +87,7 @@ internal record ManagedHubSession
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="session"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="session"/> has any null or empty required properties.</exception>
-    internal (string Key, string Value) ToCacheKeyValue()
+    internal KeyValuePair<string,string> ToKeyValuePair()
     {
         if (Key is null)
         {
@@ -99,7 +99,6 @@ internal record ManagedHubSession
 
 
     private string? Key { get; set; } = null;
-    private string? Value { get; set; } = null;
 
 
 

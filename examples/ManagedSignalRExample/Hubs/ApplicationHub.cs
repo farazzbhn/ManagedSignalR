@@ -2,27 +2,29 @@
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
+using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
 public class ApplicationHub : ManagedHub
 {
-    private readonly ManagedHubHelper _helper;
+    private readonly MemoryCache<> _helper;
 
-    public ApplicationHub(
-        ManagedSignalRConfiguration globalConfiguration, 
-        ILogger<ManagedHub> logger, 
-        IDistributedCacheProvider cacheProvider, 
-        IServiceProvider serviceProvider,
-        ManagedHubHelper helper
-    ) : base(globalConfiguration, logger, cacheProvider, serviceProvider)
+    public ApplicationHub
+    (
+        ManagedSignalRConfiguration configuration,
+        HubCommandDispatcher bus,
+        ILogger<ManagedHub> logger,
+        ICacheProvider cacheProvider,
+        IDistributedLockProvider _lock,
+        MemoryCache<> helper
+    ) : base(configuration, bus, logger, cacheProvider, _lock)
     {
         _helper = helper;
     }
 
-    protected override async Task OnConnectedHookAsync(string userId)
+    protected override async Task OnConnectedHookAsync(string userId, string connectionId)
     {
-        Console.WriteLine($"The {nameof(ApplicationHub)} method \"OnConnectedHookAsync\" is invoked AFTER every client Connection!");
 
         var alert = new Alert()
         {
@@ -32,12 +34,16 @@ public class ApplicationHub : ManagedHub
         };
 
         // retrieve the session for the user 
-        await _helper.SendToConnectionId<ApplicationHub>(Context.ConnectionId, alert);
-    }
+        ManagedHubSession session = await _helper.GetSession(userId);
 
+        // send the alert to every other connection of the user
 
-    protected override async Task OnDisconnectedHookAsync(string userId)
-    {
-        Console.WriteLine($"The {nameof(ApplicationHub)} method \"OnDisconnectedHookAsync\" is invoked AFTER every client disconnection!");
+        foreach (var connection in session.Connections)
+        {
+            if (connection.ConnectionId != connectionId)
+            {
+                await _helper.SendToConnectionId<ApplicationHub>(connection.ConnectionId, alert, userId);
+            }
+        }
     }
 }

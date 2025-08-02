@@ -5,15 +5,15 @@ using System.Text.RegularExpressions;
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
-/// Redis-based implementation of <see cref="IDistributedCacheProvider"/>.
+/// Redis-based implementation of <see cref="IDistributedCache"/>.
 /// Supports TTL (Time-To-Live in milliseconds) via key expiration and pattern-based scanning.
 /// </summary>
-public class RedisCacheProvider : IDistributedCacheProvider
+public class RedisCache : IDistributedCache
 {
     private readonly IDatabase _db;
     private readonly IServer _server;
 
-    public RedisCacheProvider(IConnectionMultiplexer redis)
+    public RedisCache(IConnectionMultiplexer redis)
     {
         _db = redis.GetDatabase();
 

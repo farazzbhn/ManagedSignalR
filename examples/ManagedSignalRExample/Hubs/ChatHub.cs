@@ -10,7 +10,7 @@ public class ChatHub : ManagedHub
     (
         ManagedSignalRConfiguration globalConfiguration, 
         ILogger<ManagedHub> logger, 
-        IDistributedCacheProvider cacheProvider, 
+        IDistributedCache cacheProvider, 
         IServiceProvider serviceProvider,
         ManagedHubHelper helper
     ) : base(globalConfiguration, logger, cacheProvider, serviceProvider)

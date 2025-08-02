@@ -3,7 +3,7 @@
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 
-public interface IEnvelopePublishEndpoint
+public interface IMessagePublisher
 {
     public Task Publish(Envelope envelope);
 }

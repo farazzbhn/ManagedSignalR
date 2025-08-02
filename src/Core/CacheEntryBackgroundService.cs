@@ -14,19 +14,19 @@ namespace ManagedLib.ManagedSignalR.Core;
 /// </summary>
 internal class CacheEntryBackgroundService : BackgroundService
 {
-    private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
-    private readonly IDistributedCacheProvider _cacheProvider;
+    private readonly MemoryCache<ManagedHubSession> _inMemoryCacheProvider;
+    private readonly IDistributedCache _distributedCache;
     private readonly ILogger _logger;
 
 public CacheEntryBackgroundService
 (
-    LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider,
-    IDistributedCacheProvider cacheProvider,
+    MemoryCache<ManagedHubSession> memoryCache,
+    IDistributedCache cacheProvider,
     ILogger<CacheEntryBackgroundService> logger
 )
 {
-    _localCacheProvider = localCacheProvider;
-    _cacheProvider = cacheProvider;
+    _inMemoryCacheProvider = memoryCache;
+    _distributedCache = cacheProvider;
     _logger = logger;
 }
 
@@ -34,16 +34,19 @@ public CacheEntryBackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            List<ManagedHubSessionCacheEntry> entries = _localCacheProvider.List();
+            
+            List<ManagedHubSession> entries = _inMemoryCacheProvider.List();
+
             foreach (var entry in entries)
             {
                 try
                 {
-                    await _cacheProvider.SetAsync(entry.key, entry.value, Constants.ManagedHubSessionCacheTtl);
+                    (string key, string value) = entry.ToKeyValuePair();
+                    await _distributedCache.SetAsync(key, value, Constants.ManagedHubSessionCacheTtl);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(message: $"Failed to write key {entry.key} to distributed cache.\n" +
+                    _logger.LogWarning(message: $"Failed to write key {entry.ToKeyValuePair().Key} to distributed cache.\n" +
                                                 $"Exception :\t {ex.Message}");
                 }
             }

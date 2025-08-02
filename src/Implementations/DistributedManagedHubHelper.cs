@@ -8,36 +8,23 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 
 internal class DistributedManagedHubHelper : ManagedHubHelper
 {
-    private readonly IDistributedCacheProvider _cacheProvider;
-    private readonly LocalCacheProvider<ManagedHubSessionCacheEntry> _localCacheProvider;
-    private readonly IEnvelopePublishEndpoint _publishEndpoint;
+    private readonly IDistributedCache _distributedCache;
+    private readonly MemoryCache<ManagedHubSession> _memoryCache;
+    private readonly IMessagePublisher _publishEndpoint;
 
     public DistributedManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        IDistributedCacheProvider cacheProvider,
-        LocalCacheProvider<ManagedHubSessionCacheEntry> localCacheProvider, 
-        IEnvelopePublishEndpoint publishEndpoint
+        IDistributedCache cacheProvider,
+        MemoryCache<ManagedHubSession> memoryCache, 
+        IMessagePublisher publishEndpoint
     ) : base(logger, serviceProvider, configuration)
     {
-        _cacheProvider = cacheProvider;
-        _localCacheProvider = localCacheProvider;
+        _distributedCache = cacheProvider;
+        _memoryCache = memoryCache;
         _publishEndpoint = publishEndpoint;
-    }
-
-    public async Task SendToConnectionId<THub>(string userId, string connectionId, dynamic message)
-    {
-        // Input validation
-        if (string.IsNullOrWhiteSpace(connectionId))
-            throw new ArgumentNullException(nameof(connectionId));
-
-        ArgumentNullException.ThrowIfNull(message);
-
-        (string Topic, string Payload) serialized = Serialize(message);
-
-        bool owned = _localCacheProvider.List().Any(x => x.Session.ConnectionId == connectionId);
     }
 
     public override async Task SendToConnectionId<THub>(string connectionId, dynamic message)
@@ -51,7 +38,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         (string Topic, string Payload) serialized = Serialize(message);
 
         // decide if the connection belongs to this very instance 
-        bool owned = _localCacheProvider.List().Any(x => x.Session.ConnectionId == connectionId);
+        bool owned = _memoryCache.List().Any(x => x.ConnectionId == connectionId);
 
         // the connection id belongs to this very instance => Try to invoke the client directly 
         if (owned)
@@ -66,7 +53,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         }
         else // the connection belongs to another instance of the application
         {
-            string[] keys = await _cacheProvider.ScanAsync($"msr:*:{connectionId}");
+            string[] keys = await _distributedCache.ScanAsync($"msr:*:{connectionId}");
 
             if (keys.Any())
             {
@@ -97,7 +84,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         ArgumentNullException.ThrowIfNull(message);
 
         // retrieve the list of cached keys to follow the msr:userId pattern
-        string[] keys = await _cacheProvider.ScanAsync($"msr:{userId}:*");
+        string[] keys = await _distributedCache.ScanAsync($"msr:{userId}:*");
 
         // Create respective sessions from the cached key/value pairs. 
         // The value (set within the ManagedHubSession) is in fact the instance id which corresponds
