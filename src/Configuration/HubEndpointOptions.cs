@@ -5,10 +5,14 @@ using ManagedLib.ManagedSignalR.Types.Exceptions;
 namespace ManagedLib.ManagedSignalR.Configuration;
 
 
+
+/// <summary>
+/// Holds mappings and other configuration options for a specific SignalR hub endpoint.
+/// </summary>
 public sealed class HubEndpointOptions
 {
     private readonly IServiceCollection _services;
-    private readonly ManagedSignalRConfiguration Parent;
+    public readonly ManagedSignalRConfiguration Parent;
 
     public HubEndpointOptions
     (
@@ -83,6 +87,17 @@ public sealed class HubEndpointOptions
         return this;
     }
 
+
+    /// <summary>
+    /// Serializes the provided message into a payload string using the pre-specified serializer and determines the corresponding topic 
+    /// based on the <c>type → topic</c> mappings configured on startup.
+    /// </summary>
+    /// <param name="message">The object to be serialized.</param>
+    /// <returns>A tuple containing the topic and the serialized payload.</returns>
+    /// <exception cref="MissingConfigurationException">
+    /// Thrown if no mapping was found for the message type. 
+    /// Ensure the type is registered using <c>ConfigureInvokeClient&lt;TModel&gt;()</c> during startup.
+    /// </exception>
     internal (string Topic, string Payload) Serialize<TModel>(TModel message)
     {
         if (!_outbound.TryGetValue(typeof(TModel), out var mapping))
@@ -90,6 +105,14 @@ public sealed class HubEndpointOptions
         return (mapping.Topic, mapping.Serialize(message));
     }
 
+
+    /// <summary>
+    /// Deserializes the provided payload into the appropriate C# type based on the <c>topic → type </c>mappings configured on startup.
+    /// </summary>
+    /// <param name="topic"></param>
+    /// <param name="payload"></param>
+    /// <returns></returns>
+    /// <exception cref="MissingConfigurationException"></exception>
     internal dynamic Deserialize(string topic, string payload)
     {
         if (!_inbound.TryGetValue(topic, out var mapping))

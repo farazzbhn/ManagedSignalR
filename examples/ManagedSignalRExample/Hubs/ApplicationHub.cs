@@ -8,16 +8,16 @@ using ManagedSignalRExample.Models;
 namespace ManagedSignalRExample.Hubs;
 public class ApplicationHub : ManagedHub
 {
-    private readonly MemoryCache<> _helper;
+    private readonly ItemBag<> _helper;
 
     public ApplicationHub
     (
         ManagedSignalRConfiguration configuration,
-        HubCommandDispatcher bus,
+        ManagedHubCommandDispatcher bus,
         ILogger<ManagedHub> logger,
         ICacheProvider cacheProvider,
         IDistributedLockProvider _lock,
-        MemoryCache<> helper
+        ItemBag<> helper
     ) : base(configuration, bus, logger, cacheProvider, _lock)
     {
         _helper = helper;

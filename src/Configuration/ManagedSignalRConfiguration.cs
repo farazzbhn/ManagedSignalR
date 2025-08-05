@@ -12,7 +12,7 @@ public class ManagedSignalRConfiguration
 {
     private List<HubEndpointOptions> Options { get; }
 
-
+    public string CachePrefix { get; set; } = "msr:";
 
     public bool? EnableDetailedErrors { get; set; } = null;
     public int? KeepAliveInterval { get; set; } = null;

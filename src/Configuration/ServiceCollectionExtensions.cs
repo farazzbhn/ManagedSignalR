@@ -52,20 +52,20 @@ public static class ServiceCollectionExtensions
 
             // register the single-instance managed hub helper whic works without a distributed cache 
             // using the local memory cache
-            services.AddScoped<ManagedHubHelper, SingleInstanceManagedHubHelper>();
+            services.AddScoped<ManagedHubHelper, InMemoryManagedHubHelper>();
 
             // NO implementation of IDistributedCacheProvider is needed in single instance mode
             // NO cache entry background service is needed either ( cache entries do not expire in single instance mode )
         }
 
-        // register the local cache provider to store connection data for this instance in memory
-        services.AddScoped<MemoryCache<ManagedHubSession>>();
+        services.AddSingleton(configuration);
+
+        services.AddMemoryCache();
 
 
 
         // Register the configuration as a singleton
-        services.AddSingleton(configuration);
-        services.AddSingleton<HubCommandDispatcher>();
+        services.AddSingleton<ManagedHubCommandDispatcher>();
 
         // Configure SignalR
         services.AddSignalR(options =>

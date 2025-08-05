@@ -16,14 +16,14 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// </remarks>
 internal class InMemoryManagedHubHelper : ManagedHubHelper
 {
-    private readonly MemoryCache<ManagedHubSession> _localCache;
+    private readonly ItemBag<UserConnectionGroup> _localCache;
 
     public InMemoryManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        MemoryCache<ManagedHubSession> localCache
+        ItemBag<UserConnectionGroup> localCache
     ) : base(logger, serviceProvider, configuration)
     {
         _localCache = localCache;
@@ -61,7 +61,7 @@ internal class InMemoryManagedHubHelper : ManagedHubHelper
         ArgumentNullException.ThrowIfNull(message);
 
         // Get all user sessions from local cache
-        IEnumerable<ManagedHubSession> sessions = _localCache.List().Where(s => s.UserId == userId);
+        IEnumerable<UserConnectionGroup> sessions = _localCache.List().Where(s => s.UserId == userId);
         IEnumerable<string> connectionIds = sessions.Select(s => s.ConnectionId);
 
         // Send to all connections concurrently

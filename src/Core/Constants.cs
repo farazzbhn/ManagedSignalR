@@ -3,7 +3,6 @@
 namespace ManagedLib.ManagedSignalR.Core;
 public static class Constants
 {
-    public const string Unauthenticated = "unauthenticated";
-    public const int ManagedHubSessionCacheTtl = 10000;
-    public const int ManagedHubSessionCacheReInstateInterval = 5000;
+    public const string CachePrefix = "msr:";
+    public const string Anonymous = "anon";
 }

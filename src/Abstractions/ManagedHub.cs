@@ -2,169 +2,162 @@
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Reflection;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
-
-    private readonly ManagedSignalRConfiguration _globalConfiguration;
+    private readonly ManagedSignalRConfiguration _config;
     private readonly ILogger<ManagedHub> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly MemoryCache<ManagedHubSession> _memoryCache;
+    private readonly IUserConnectionManager _userConnectionManager;
+
+
     internal ManagedHub
     (
-        ManagedSignalRConfiguration globalConfiguration,
-        ILogger<ManagedHub> logger, 
-        IDistributedCache cacheProvider, 
+        ILogger<ManagedHub> logger,
+        ManagedSignalRConfiguration config,
         IServiceProvider serviceProvider, 
-        MemoryCache<ManagedHubSession> memoryCache
+        IUserConnectionManager userConnectionManager
     )
     {
         _logger = logger;
-        _globalConfiguration = globalConfiguration;
+        _config = config;
         _serviceProvider = serviceProvider;
-        _memoryCache = memoryCache;
+        _userConnectionManager = userConnectionManager;
     }
 
     /// <summary>
-    /// Handles new client connections
+    /// Handles new client connections.
     /// </summary>
-    /// <remarks>- Override <see cref="OnConnectedHookAsync"/> to execute custom logic when a client connects. <br/></remarks>
+    /// <remarks>
+    /// Override <see cref="OnConnectedHookAsync"/> to run custom logic when a client connects.
+    /// </remarks>
     public sealed override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();
 
-        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
-        string connectionId = Context.ConnectionId;
-
-        // create the session and the respective cache entry  object
-        // Try & associate the connection ID with the cached user session.
-        var session = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId);
-
-        // store the session information locally to be accessed later
-        _memoryCache.Add(session);
-
+        
+        // add the connection to the list of connections associated with the user
+        _userConnectionManager.AddConnection(this.GetType(), Context.UserIdentifier,  Context.ConnectionId, AppInfo.InstanceId);
+        
         try
         {
-            if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
+            if (_config.DeploymentMode == DeploymentMode.Distributed)
             {
-                // create the key value set for the sesion
-                (string Key, string Value) entry = session.ToKeyValuePair();
-
-                IDistributedCache distributedCache = _serviceProvider.GetRequiredService<IDistributedCache>();
-
-                // cache the key/value pair cache using the default TTL.
-                // The mechanism allows for automatic removal of instance-bound cache entries in case the app shuts down unexpectedly
-                // A background service is then used to re-cache this entries before they fail
-                await distributedCache.SetAsync(entry.Key, entry.Value, Constants.ManagedHubSessionCacheTtl);
-            }
-        }
-        catch (Exception ex) // Failed to cache the updated object => Log, abort, and return.
-        {
-            Context.Abort();
-
-            _logger.LogError(message:"Failed to cache the new connection for user {UserId}:{ConnectionId}.\n" +
-                                     "Forcibly closed the connection.\n" +
-                                     "Exception {ex}", userId, connectionId, ex.Message
-            );
-
-            return;
-        }
-
-        // Invoke the hook
-        await OnConnectedHookAsync(userId);
-    }
-
-
-    /// <summary>
-    /// Handles client disconnections
-    /// </summary>
-    /// <remarks>- Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic a client disconnects.</remarks>
-    public sealed override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        await base.OnDisconnectedAsync(exception);
-
-        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
-        string? connectionId = Context.ConnectionId;
-
-        ManagedHubSession session = new ManagedHubSession(userId, connectionId, AppInfo.InstanceId);
-
-        // remove from local in-memory cache 
-        _memoryCache.Remove(session);
-
-        try
-        {
-            // try remove from the distributed cache. 
-            if (_globalConfiguration.DeploymentMode == DeploymentMode.Distributed)
-            {
-                // create the key value set for the session
-                (string Key, string Value) entry = session.ToKeyValuePair();
-
-                IDistributedCache distributedCache = _serviceProvider.GetRequiredService<IDistributedCache>();
-
-                // cache the key/value pair cache using the default TTL.
-                // The mechanism allows for automatic removal of instance-bound cache entries in case the app shuts down unexpectedly
-                // A background service is then used to re-cache this entries before they fail
-                await distributedCache.RemoveAsync(entry.Key);
+                // publish a message
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(message: $"OnDisconnectedAsync failed to run to completion.\n" +
-                                        $"{ex.Message}"
-            );
+            // Failed to cache the updated object => Log, abort, and clean up
+            Context.Abort();
+
+            _logger.LogError(
+                "Failed to cache the new connection for user {UserId}:{ConnectionId}. Forcibly closed the connection. Exception: {ExceptionMessage}",
+                Context.UserIdentifier, Context.ConnectionId, ex.Message);
+
+            // remove the connection
+            _userConnectionManager.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
+
+            return;
         }
-        // invoke the hook
-        await OnDisconnectedHookAsync(userId);
+
+        // Invoke the connection hook for custom logic
+        await OnConnectedHookAsync();
     }
 
     /// <summary>
-    /// Empty hook -- Override to implement custom logic on connection
+    /// Handles client disconnections.
     /// </summary>
-    protected virtual Task OnConnectedHookAsync(string userId) => Task.CompletedTask;
+    /// <remarks>
+    /// Override <see cref="OnDisconnectedHookAsync"/> to execute custom logic when a client disconnects.
+    /// </remarks>
+    public sealed override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        await base.OnDisconnectedAsync(exception);
 
-    ///<summary>
-    /// Empty hook -- Override to implement custom logic on disconnection
-    /// </summary>
-    protected virtual Task OnDisconnectedHookAsync(string userId) => Task.CompletedTask;
+        string userId = Context.UserIdentifier ?? Constants.Anonymous;
 
+        UserConnectionGroup connectionsGroup = new UserConnectionGroup(userId, Context.ConnectionId, AppInfo.InstanceId);
+        KeyValuePair<string, string> entry = connectionsGroup.AsKeyValuePair();
+
+        // Remove the session information from the in-memory cache.
+        _memoryCache.Remove(entry.Key);
+
+        try
+        {
+            if (_config.DeploymentMode == DeploymentMode.Distributed)
+            {
+                // TODO: Implement distributed cache synchronization logic here
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("OnDisconnectedAsync failed to run to completion. Exception: {ExceptionMessage}", ex.Message);
+        }
+
+        // Invoke the disconnection hook for custom logic
+        await OnDisconnectedHookAsync();
+    }
 
     /// <summary>
-    /// Invoked by the client, the method processes incoming messages and routes them to handlers
+    /// Empty hook — Override to implement custom logic on connection. <br />
+    /// Access the <see cref="Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
     /// </summary>
-    /// <param name="topic">Message topic for routing</param>
-    /// <param name="message">Serialized message data</param>
+    protected virtual Task OnConnectedHookAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Empty hook — Override to implement custom logic on disconnection. <br />
+    /// Access the <see cref="Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
+    /// </summary>
+    protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Invoked by the client, processes incoming messages and routes them to handlers.
+    /// </summary>
+    /// <param name="topic">Message topic for routing.</param>
+    /// <param name="message">Serialized message data.</param>
+    /// <exception cref="ServiceNotRegisteredException">Thrown when the handler service is not registered.</exception>
+    /// <exception cref="HandlerFailedException">Thrown when the handler invocation fails.</exception>
     public async Task InvokeServer(string topic, string message)
     {
-        HubEndpointOptions options = _globalConfiguration.GetHubEndpointOptions(this.GetType());
 
-        string userId = Context.UserIdentifier ?? Constants.Unauthenticated;
 
-        // Deserialize using configured deserializer
-        dynamic command = options.Deserialize(topic, message);
+        // Retrieve the options configured for this hub endpoint
+        HubEndpointOptions hubEndpointOptions = _config.GetHubEndpointOptions(this.GetType());
 
-        // retrieve the specified handler type from the configuration
-        Type handlerType = options.GetHandlerType(topic);
+        // Deserialize the payload into a specific c# type based on topic and message
+        dynamic command = hubEndpointOptions.Deserialize(topic, message);
 
-        // and get from the service provider
-        // handler is an implementation of IHubCommandHandler<>
+        // Retrieve the handler type for the topic as registered configuration. 
+        // i.e, IHubCommandHandler<Command> where Command is the type of the command being handled.
+        Type handlerType = hubEndpointOptions.GetHandlerType(topic);
+
+        // Get the handler instance from the service provider
         object? handler = _serviceProvider.GetService(handlerType);
 
         if (handler == null) throw new ServiceNotRegisteredException(handlerType.ToString());
 
-        var handleAsyncMethod = handlerType.GetMethod("Handle");
+        MethodInfo? handleMethod = handlerType.GetMethod("Handle");
+
+        if (handleMethod == null) throw new MissingMethodException($"Handle method not found on handler type {handlerType}");
 
         try
         {
-            await (Task)handleAsyncMethod.Invoke(handler, new object[] { command, Context, userId });
+            await (Task)handleMethod.Invoke(handler, new object[] { command, Context });
         }
-        catch (Exception exception)
+        catch (TargetInvocationException tie) when (tie.InnerException != null)
         {
-            throw new HandlerFailedException(handlerType, exception);
+            throw new HandlerFailedException(handlerType, tie.InnerException);
+        }
+        catch (Exception ex)
+        {
+            throw new HandlerFailedException(handlerType, ex);
         }
     }
 }

@@ -9,7 +9,7 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 internal class DistributedManagedHubHelper : ManagedHubHelper
 {
     private readonly IDistributedCache _distributedCache;
-    private readonly MemoryCache<ManagedHubSession> _memoryCache;
+    private readonly ItemBag<UserConnectionGroup> _memoryCache;
     private readonly IMessagePublisher _publishEndpoint;
 
     public DistributedManagedHubHelper
@@ -18,7 +18,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
         IDistributedCache cacheProvider,
-        MemoryCache<ManagedHubSession> memoryCache, 
+        ItemBag<UserConnectionGroup> memoryCache, 
         IMessagePublisher publishEndpoint
     ) : base(logger, serviceProvider, configuration)
     {
@@ -89,7 +89,7 @@ internal class DistributedManagedHubHelper : ManagedHubHelper
         // Create respective sessions from the cached key/value pairs. 
         // The value (set within the ManagedHubSession) is in fact the instance id which corresponds
         // to the single instance currently running 
-        IEnumerable<ManagedHubSession> sessions = keys.Select(k => ManagedHubSession.FromCacheKeyValue(k, AppInfo.InstanceId));
+        IEnumerable<UserConnectionGroup> sessions = keys.Select(k => UserConnectionGroup.FromKeyValue(k, AppInfo.InstanceId));
 
         // retrieve the list of connection ids 
         IEnumerable<string> connectionIds = sessions.Select(s => s.ConnectionId);

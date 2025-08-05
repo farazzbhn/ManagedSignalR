@@ -13,6 +13,6 @@ public interface IHubCommandHandler<in TCommand>
     /// </summary>
     /// <param name="request">Command to process</param>
     /// <param name="context">SignalR connection context</param>
-    Task Handle(TCommand request, HubCallerContext context, string userId);
+    Task Handle(TCommand request, HubCallerContext context);
 
 }
