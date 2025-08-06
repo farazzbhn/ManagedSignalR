@@ -40,9 +40,9 @@ public abstract class ManagedHubHelper
     /// Sends a message to a specific user identified by user ID.
     /// </summary>
     /// <typeparam name="THub">The type of the SignalR hub.</typeparam>
-    /// <param name="userId">The target user ID.</param>
+    /// <param name="userIdentifier">The target user ID.</param>
     /// <param name="message">The message to send.</param>
-    public abstract Task SendToUserId<THub>(string userId, dynamic message) where THub : ManagedHub;
+    public abstract Task SendToUserId<THub>(string userIdentifier, dynamic message) where THub : AbstractManagedHub;
 
     /// <summary>
     /// Sends a message to a specific connection identified by connection ID.
@@ -50,7 +50,7 @@ public abstract class ManagedHubHelper
     /// <typeparam name="THub">The type of the SignalR hub.</typeparam>
     /// <param name="connectionId">The target connection ID.</param>
     /// <param name="message">The message to send.</param>
-    public abstract Task SendToConnectionId<THub>(string connectionId, dynamic message) where THub : ManagedHub;
+    public abstract Task SendToConnectionId<THub>(string connectionId, dynamic message) where THub : AbstractManagedHub;
 
     /// <summary>
     /// Serializes a dynamic message using the configuration associated with the given hub type.
@@ -58,7 +58,7 @@ public abstract class ManagedHubHelper
     /// <typeparam name="THub">The type of the SignalR hub.</typeparam>
     /// <param name="message">The message to serialize.</param>
     /// <returns>A tuple containing the topic and the serialized payload.</returns>
-    protected (string Topic, string Payload) Serialize<THub>(dynamic message) where THub : ManagedHub
+    protected (string Topic, string Payload) Serialize<THub>(dynamic message) where THub : AbstractManagedHub
     {
         HubEndpointOptions config = _configuration.GetHubEndpointOptions(typeof(THub));
         (string Topic, string Payload) serialized = config.Serialize(message);
@@ -77,7 +77,7 @@ public abstract class ManagedHubHelper
         string connectionId,
         string topic,
         string payload
-    ) where THub : ManagedHub
+    ) where THub : AbstractManagedHub
     {
         try
         {

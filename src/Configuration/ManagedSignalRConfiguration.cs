@@ -99,7 +99,7 @@ public class ManagedSignalRConfiguration
     /// </summary>
     /// <typeparam name="THub">Hub type to configure</typeparam>
     /// <returns>Configuration builder for the hub</returns>
-    public HubEndpointOptions AddHub<THub>() where THub : ManagedHub
+    public HubEndpointOptions AddHub<THub>() where THub : AbstractManagedHub
     {
         // Find or create mapping for the hub
         var config = Options.FirstOrDefault(m => m.HubType == typeof(THub));
@@ -124,7 +124,7 @@ public class ManagedSignalRConfiguration
     /// <exception cref="InvalidOperationException">invalid input type</exception>
     internal HubEndpointOptions GetHubEndpointOptions(Type type)
     {
-        if (!typeof(ManagedHub).IsAssignableFrom(type))
+        if (!typeof(AbstractManagedHub).IsAssignableFrom(type))
             throw new InvalidOperationException($"Type {type.FullName} is not a valid ManagedHub type.");
 
         HubEndpointOptions? config = Options.SingleOrDefault(x => x.HubType == type);

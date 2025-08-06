@@ -1,5 +1,6 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
+using ManagedLib.ManagedSignalR.Core;
 using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ManagedLib.ManagedSignalR.Core;
+namespace ManagedLib.ManagedSignalR.Implementations;
 
-public class UserConnectionManager : IUserConnectionManager
+internal class InMemoryUserConnectionCache : IUserConnectionCache
 {
 
     private readonly IMemoryCache _cache;
@@ -26,7 +27,7 @@ public class UserConnectionManager : IUserConnectionManager
     private string KeyGen(Type hubType, string userIdentifier) =>
         $"{hubType.Name}:{_configuration.CachePrefix + userIdentifier.ToLowerInvariant()}";
 
-    public UserConnectionManager
+    public InMemoryUserConnectionCache
     (
         IMemoryCache cache,
         ManagedSignalRConfiguration configuration
@@ -38,9 +39,9 @@ public class UserConnectionManager : IUserConnectionManager
 
     public void AddConnection(Type hubType, string userIdentifier, string connectionId, string instanceId)
     {
-        if (hubType == null || !typeof(ManagedHub).IsAssignableFrom(hubType))
+        if (hubType == null || !typeof(AbstractManagedHub).IsAssignableFrom(hubType))
             throw new InvalidOperationException(
-                $"{hubType.Name} does not implement expected type {typeof(ManagedHub)}");
+                $"{hubType.Name} does not implement expected type {typeof(AbstractManagedHub)}");
 
         string key = KeyGen(hubType, userIdentifier);
 
@@ -65,9 +66,9 @@ public class UserConnectionManager : IUserConnectionManager
     public void RemoveConnection(Type hubType, string userIdentifier, string connectionId)
     {
 
-        if (hubType == null || !typeof(ManagedHub).IsAssignableFrom(hubType))
+        if (hubType == null || !typeof(AbstractManagedHub).IsAssignableFrom(hubType))
             throw new InvalidOperationException(
-                $"{hubType.Name} does not implement expected type {typeof(ManagedHub)}");
+                $"{hubType.Name} does not implement expected type {typeof(AbstractManagedHub)}");
 
         string key = KeyGen(hubType, userIdentifier);
 
@@ -95,9 +96,9 @@ public class UserConnectionManager : IUserConnectionManager
 
     public UserConnection[] GetUserConnections(Type hubType, string userIdentifier)
     {
-        if (hubType == null || !typeof(ManagedHub).IsAssignableFrom(hubType))
+        if (hubType == null || !typeof(AbstractManagedHub).IsAssignableFrom(hubType))
             throw new InvalidOperationException(
-                $"{hubType.Name} does not implement expected type {typeof(ManagedHub)}");
+                $"{hubType.Name} does not implement expected type {typeof(AbstractManagedHub)}");
 
         string key = KeyGen(hubType, userIdentifier);
 

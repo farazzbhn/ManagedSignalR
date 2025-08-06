@@ -29,45 +29,45 @@ public static class ServiceCollectionExtensions
         var configuration = new ManagedSignalRConfiguration(services);
         configurer.Invoke(configuration);
 
-        if (configuration.DeploymentMode is null)
-        {
-            throw new MisconfiguredException(
-                $"Deployment mode is not set.\n" +
-                $"To fix this, configure the system by calling 'AsSingleInstance()' or 'AsDistributed() within the provided configurer'");
-
-        }
-        else if (configuration.DeploymentMode is DeploymentMode.Distributed)
-        {
-            // Register the distributed managed hub helper
-            services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
-
-            // In distributed mode, we use a distributed cache provider to store connection data across instances
-            services.AddScoped<IDistributedCache, RedisCache>();
-
-            // Register the cache entry background service to periodically re-instate expiring cache entries
-            services.AddHostedService<CacheEntryBackgroundService>();
-        }
-        else // if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
-        {
-
-            // register the single-instance managed hub helper whic works without a distributed cache 
-            // using the local memory cache
-            services.AddScoped<ManagedHubHelper, InMemoryManagedHubHelper>();
-
-            // NO implementation of IDistributedCacheProvider is needed in single instance mode
-            // NO cache entry background service is needed either ( cache entries do not expire in single instance mode )
-        }
-
+        // Register the configuration as a singleton. The configuration is used to retrieve the hub mappings and other settings
         services.AddSingleton(configuration);
 
+        // register the default implementation of user connection cache service ( used to store user connection ids)
+        // uses the in-memory cache to store user connection ids
         services.AddMemoryCache();
+        services.AddScoped<IUserConnectionCache, UserConnectionCache>();
 
 
 
-        // Register the configuration as a singleton
-        services.AddSingleton<ManagedHubCommandDispatcher>();
+        // Register the managed hub helper based on the deployment mode
 
-        // Configure SignalR
+        if (configuration.DeploymentMode is null)
+        {
+            var msg = "Deployment mode is not set. Please configure the system by calling 'AsSingleInstance()' or 'AsDistributed()' within the provided configurer.";
+
+            throw new MisconfiguredException(msg);
+
+        }
+        else if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
+        {
+            // register the single-instance managed hub helper 
+            services.AddScoped<ManagedHubHelper, InMemoryManagedHubHelper>();
+
+            // Register the distributed managed hub helper
+            //services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
+        }
+        else // if (configuration.DeploymentMode is DeploymentMode.Distributed)
+        {
+
+            // using the local memory cache
+        }
+
+
+
+
+        /*********************************
+         *     SignalR Configuration     *
+         *********************************/
         services.AddSignalR(options =>
         {
             if (configuration.EnableDetailedErrors.HasValue)

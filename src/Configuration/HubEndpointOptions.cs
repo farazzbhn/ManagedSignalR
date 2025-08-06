@@ -131,7 +131,6 @@ public sealed class HubEndpointOptions
             $"Handler type not specified for topic {topic}. Please call UseHandler() to register the respective handler");
 
         return type;
-
     }
 
     /// <summary>

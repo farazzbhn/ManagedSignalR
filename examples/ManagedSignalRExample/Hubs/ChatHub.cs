@@ -2,14 +2,14 @@
 using ManagedLib.ManagedSignalR.Configuration;
 
 namespace ManagedSignalRExample.Hubs;
-public class ChatHub : ManagedHub
+public class ChatHub : AbstractManagedHub
 {
     private readonly ManagedHubHelper _helper;
 
     public ChatHub
     (
         ManagedSignalRConfiguration globalConfiguration, 
-        ILogger<ManagedHub> logger, 
+        ILogger<AbstractManagedHub> logger, 
         IDistributedCache cacheProvider, 
         IServiceProvider serviceProvider,
         ManagedHubHelper helper

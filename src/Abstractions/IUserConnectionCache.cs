@@ -1,11 +1,11 @@
 ﻿using ManagedLib.ManagedSignalR.Core;
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-public interface IUserConnectionManager
+internal interface IUserConnectionCache
 {
     public void AddConnection(Type hubType, string userIdentifier, string connectionId, string instanceId);
 
     public void RemoveConnection(Type hubType, string userIdentifier, string connectionId);
 
-    public UserConnection[] GetUserConnections(Type hubType, string userIdentifier);
+    public UserConnection[] GetUserConnections(Type hubType, string? userIdentifier);
 }

@@ -6,7 +6,7 @@ using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
-public class ApplicationHub : ManagedHub
+public class ApplicationHub : AbstractManagedHub
 {
     private readonly ItemBag<> _helper;
 
@@ -14,7 +14,7 @@ public class ApplicationHub : ManagedHub
     (
         ManagedSignalRConfiguration configuration,
         ManagedHubCommandDispatcher bus,
-        ILogger<ManagedHub> logger,
+        ILogger<AbstractManagedHub> logger,
         ICacheProvider cacheProvider,
         IDistributedLockProvider _lock,
         ItemBag<> helper

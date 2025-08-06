@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using ManagedLib.ManagedSignalR.Abstractions;
+﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
 using Microsoft.Extensions.Logging;
@@ -8,25 +7,25 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 
 /// <summary>
 /// SignalR message helper for single-instance deployments.
-/// Uses local memory cache for connection tracking. No distributed cache required.
+/// Uses local memory cache for connection tracking. no pub-sub pattern is used.
 /// </summary>
 /// <remarks>
 /// <b>Use cases:</b> Development, testing, small applications, single-server deployments.
-/// <b>Limitations:</b> No cross-instance messaging, data lost on restart.
+/// <b>Limitations:</b> No messaging, data lost on restart.
 /// </remarks>
 internal class InMemoryManagedHubHelper : ManagedHubHelper
 {
-    private readonly ItemBag<UserConnectionGroup> _localCache;
+    private readonly IUserConnectionCache _userConnectionCache;
 
     public InMemoryManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
         ManagedSignalRConfiguration configuration, 
-        ItemBag<UserConnectionGroup> localCache
+        IUserConnectionCache userConnectionCache
     ) : base(logger, serviceProvider, configuration)
     {
-        _localCache = localCache;
+        _userConnectionCache = userConnectionCache;
     }
 
     /// <summary>
@@ -39,6 +38,7 @@ internal class InMemoryManagedHubHelper : ManagedHubHelper
             throw new ArgumentNullException(nameof(connectionId));
 
         ArgumentNullException.ThrowIfNull(message);
+
 
         (string Topic, string Payload) serialized = base.Serialize<THub>(message);
         bool result = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
@@ -53,26 +53,24 @@ internal class InMemoryManagedHubHelper : ManagedHubHelper
     /// Sends message to all connections of a user.
     /// </summary>
     /// <exception cref="ArgumentNullException">userId null/empty or message null</exception>
-    public override async Task SendToUserId<THub>(string userId, dynamic message)
+    public override async Task SendToUserId<THub>(string? userIdentifier, dynamic message)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentNullException(nameof(userId));
+        if (string.IsNullOrWhiteSpace(userIdentifier))
+            throw new ArgumentNullException(nameof(userIdentifier));
 
         ArgumentNullException.ThrowIfNull(message);
 
-        // Get all user sessions from local cache
-        IEnumerable<UserConnectionGroup> sessions = _localCache.List().Where(s => s.UserId == userId);
-        IEnumerable<string> connectionIds = sessions.Select(s => s.ConnectionId);
+        // retrieve using the configuration the topic and payload for the message
+        (string Topic, string Payload) serialized = base.Serialize<THub>(message);
 
         // Send to all connections concurrently
-        (string Topic, string Payload) serialized = base.Serialize<THub>(message);
-        IEnumerable<Task<bool>> tasks = connectionIds.Select(connId => 
-            TryInvokeClient<THub>(connId, serialized.Topic, serialized.Payload));
+        string[] connectionIds = _userConnectionCache.GetUserConnections(typeof(THub), userIdentifier).Select(uc => uc.ConnectionId).ToArray();
+        IEnumerable<Task<bool>> tasks = connectionIds.Select(connId => TryInvokeClient<THub>(connId, serialized.Topic, serialized.Payload));
 
         bool[] results = await Task.WhenAll(tasks);
         int successCount = results.Count(r => r);
 
         Logger.LogInformation("Message sent to {SuccessCount} of {TotalCount} connection(s) for userId '{UserId}'",
-            successCount, results.Length, userId);
+            successCount, results.Length, userIdentifier);
     }
 }

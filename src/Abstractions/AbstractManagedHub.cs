@@ -9,26 +9,26 @@ using System.Reflection;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-public abstract class ManagedHub : Hub<IManagedHubClient>
+public abstract class AbstractManagedHub : Hub<IManagedHubClient>
 {
     private readonly ManagedSignalRConfiguration _config;
-    private readonly ILogger<ManagedHub> _logger;
+    private readonly ILogger<AbstractManagedHub> _logger;
+    private readonly IUserConnectionCache _userConnectionCache;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IUserConnectionManager _userConnectionManager;
 
 
-    internal ManagedHub
+    internal AbstractManagedHub
     (
-        ILogger<ManagedHub> logger,
+        ILogger<AbstractManagedHub> logger,
         ManagedSignalRConfiguration config,
-        IServiceProvider serviceProvider, 
-        IUserConnectionManager userConnectionManager
+        IServiceProvider serviceProvider,
+        IUserConnectionCache userConnectionCache
     )
     {
         _logger = logger;
         _config = config;
         _serviceProvider = serviceProvider;
-        _userConnectionManager = userConnectionManager;
+        _userConnectionCache = userConnectionCache;
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         
         // add the connection to the list of connections associated with the user
-        _userConnectionManager.AddConnection(this.GetType(), Context.UserIdentifier,  Context.ConnectionId, AppInfo.InstanceId);
+        _userConnectionCache.AddConnection(this.GetType(), Context.UserIdentifier,  Context.ConnectionId, AppInfo.InstanceId);
         
         try
         {
@@ -62,7 +62,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
                 Context.UserIdentifier, Context.ConnectionId, ex.Message);
 
             // remove the connection
-            _userConnectionManager.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
+            _userConnectionCache.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
 
             return;
         }
@@ -81,19 +81,13 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     {
         await base.OnDisconnectedAsync(exception);
 
-        string userId = Context.UserIdentifier ?? Constants.Anonymous;
-
-        UserConnectionGroup connectionsGroup = new UserConnectionGroup(userId, Context.ConnectionId, AppInfo.InstanceId);
-        KeyValuePair<string, string> entry = connectionsGroup.AsKeyValuePair();
-
-        // Remove the session information from the in-memory cache.
-        _memoryCache.Remove(entry.Key);
+        _userConnectionCache.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
 
         try
         {
             if (_config.DeploymentMode == DeploymentMode.Distributed)
             {
-                // TODO: Implement distributed cache synchronization logic here
+                // publish a disconnected event
             }
         }
         catch (Exception ex)
@@ -107,27 +101,57 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
     /// <summary>
     /// Empty hook — Override to implement custom logic on connection. <br />
-    /// Access the <see cref="Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
+    /// Access the <see cref="Hub.Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
     /// </summary>
     protected virtual Task OnConnectedHookAsync() => Task.CompletedTask;
 
     /// <summary>
     /// Empty hook — Override to implement custom logic on disconnection. <br />
-    /// Access the <see cref="Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
+    /// Access the <see cref="Hub.Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
     /// </summary>
     protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
 
+
+
+
     /// <summary>
-    /// Invoked by the client, processes incoming messages and routes them to handlers.
+    /// Invoked by the client to process a message routed by topic.
+    /// <br/><br/>
+    /// The method performs the following steps:
+    /// <list type="bullet">
+    ///   <item>
+    ///     <description>
+    ///       Determines the corresponding C# type  for the payload based on the combination 
+    ///       of the <b>current hub type</b> and <b>topic</b>.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Deserializes the message using the <b>pre-configured deserializer</b> method.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Resolves the corresponding <see cref="IHubCommandHandler{TCommand}"/> from the service provider.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Invokes the handler with the deserialized command and the current Hub context.
+    ///     </description>
+    ///   </item>
+    /// </list>
     /// </summary>
-    /// <param name="topic">Message topic for routing.</param>
-    /// <param name="message">Serialized message data.</param>
-    /// <exception cref="ServiceNotRegisteredException">Thrown when the handler service is not registered.</exception>
-    /// <exception cref="HandlerFailedException">Thrown when the handler invocation fails.</exception>
+    /// <param name="topic">The message topic used for routing to the appropriate handler.</param>
+    /// <param name="message">The serialized message payload.</param>
+    /// <exception cref="ServiceNotRegisteredException">
+    /// Thrown when no handler is registered for the resolved handler type.
+    /// </exception>
+    /// <exception cref="HandlerFailedException">
+    /// Thrown when the handler's invocation throws an exception.
+    /// </exception>
     public async Task InvokeServer(string topic, string message)
     {
-
-
         // Retrieve the options configured for this hub endpoint
         HubEndpointOptions hubEndpointOptions = _config.GetHubEndpointOptions(this.GetType());
 
@@ -149,7 +173,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 
         try
         {
-            await (Task)handleMethod.Invoke(handler, new object[] { command, Context });
+            await (Task)handleMethod!.Invoke(handler, [command, Context])!;
         }
         catch (TargetInvocationException tie) when (tie.InnerException != null)
         {
