@@ -4,7 +4,6 @@ using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
@@ -32,10 +31,9 @@ public static class ServiceCollectionExtensions
         // Register the configuration as a singleton. The configuration is used to retrieve the hub mappings and other settings
         services.AddSingleton(configuration);
 
-        // register the default implementation of user connection cache service ( used to store user connection ids)
-        // uses the in-memory cache to store user connection ids
-        services.AddMemoryCache();
-        services.AddScoped<IUserConnectionCache, UserConnectionCache>();
+        // Register the connection tracker as an open generic singleton
+        services.AddSingleton(typeof(IConnectionTracker<>), typeof(ConnectionTracker<>));
+
 
 
 
@@ -51,7 +49,7 @@ public static class ServiceCollectionExtensions
         else if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
         {
             // register the single-instance managed hub helper 
-            services.AddScoped<ManagedHubHelper, InMemoryManagedHubHelper>();
+            services.AddScoped<ManagedHubHelper, LocalManagedHubHelper>();
 
             // Register the distributed managed hub helper
             //services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();

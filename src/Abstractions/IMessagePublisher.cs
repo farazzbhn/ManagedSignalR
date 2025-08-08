@@ -1,9 +1,17 @@
-﻿using ManagedLib.ManagedSignalR.Types;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
+public interface IMessage
+{
+
+}
 
 public interface IMessagePublisher
 {
-    public Task Publish(Envelope envelope);
+    public Task PublishAsync(IMessage message);
 }

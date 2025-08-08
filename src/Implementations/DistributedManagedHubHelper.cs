@@ -83,7 +83,7 @@
 //        // Create respective sessions from the cached key/value pairs. 
 //        // The value (set within the ManagedHubSession) is in fact the instance id which corresponds
 //        // to the single instance currently running 
-//        IEnumerable<UserConnectionGroup> sessions = keys.Select(k => UserConnectionGroup.FromKeyValue(k, AppInfo.InstanceId));
+//        IEnumerable<ConnectionGroup> sessions = keys.Select(k => ConnectionGroup.FromKeyValue(k, AppInfo.InstanceId));
 
 //        // retrieve the list of connection ids 
 //        IEnumerable<string> connectionIds = sessions.Select(s => s.ConnectionId);

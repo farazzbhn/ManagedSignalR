@@ -1,6 +1,8 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
@@ -13,19 +15,15 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// <b>Use cases:</b> Development, testing, small applications, single-server deployments.
 /// <b>Limitations:</b> No messaging, data lost on restart.
 /// </remarks>
-internal class InMemoryManagedHubHelper : ManagedHubHelper
+internal class LocalManagedHubHelper : ManagedHubHelper
 {
-    private readonly IUserConnectionCache _userConnectionCache;
-
-    public InMemoryManagedHubHelper
+    public LocalManagedHubHelper
     (
         ILogger<ManagedHubHelper> logger, 
         IServiceProvider serviceProvider, 
-        ManagedSignalRConfiguration configuration, 
-        IUserConnectionCache userConnectionCache
+        ManagedSignalRConfiguration configuration
     ) : base(logger, serviceProvider, configuration)
     {
-        _userConnectionCache = userConnectionCache;
     }
 
     /// <summary>
@@ -39,14 +37,14 @@ internal class InMemoryManagedHubHelper : ManagedHubHelper
 
         ArgumentNullException.ThrowIfNull(message);
 
-
         (string Topic, string Payload) serialized = base.Serialize<THub>(message);
+
+        IHubContext<THub, IManagedHubClient>? context =
+            _serviceProvider.GetRequiredService<IHubContext<THub, IManagedHubClient>>();
+
+
         bool result = await TryInvokeClient<THub>(connectionId, serialized.Topic, serialized.Payload);
 
-        if (!result)
-        {
-            Logger.LogWarning("Failed to send message to connection '{ConnectionId}'", connectionId);
-        }
     }
 
     /// <summary>
@@ -63,8 +61,12 @@ internal class InMemoryManagedHubHelper : ManagedHubHelper
         // retrieve using the configuration the topic and payload for the message
         (string Topic, string Payload) serialized = base.Serialize<THub>(message);
 
+
         // Send to all connections concurrently
-        string[] connectionIds = _userConnectionCache.GetUserConnections(typeof(THub), userIdentifier).Select(uc => uc.ConnectionId).ToArray();
+        string[] connectionIds = _connectionCache.GetConnections(typeof(THub), userIdentifier).Select(uc => uc.ConnectionId).ToArray();
+
+
+
         IEnumerable<Task<bool>> tasks = connectionIds.Select(connId => TryInvokeClient<THub>(connId, serialized.Topic, serialized.Payload));
 
         bool[] results = await Task.WhenAll(tasks);

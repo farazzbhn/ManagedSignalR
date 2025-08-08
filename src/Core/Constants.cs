@@ -3,6 +3,7 @@
 namespace ManagedLib.ManagedSignalR.Core;
 public static class Constants
 {
-    public const string CachePrefix = "msr:";
-    public const string Null = "anon";
+    internal const string Prefix = "msr:";
+    internal const string All = "all";
+    internal const string Unauthenticated = "unauth";
 }

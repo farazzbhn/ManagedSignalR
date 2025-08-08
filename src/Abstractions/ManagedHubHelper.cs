@@ -2,7 +2,6 @@
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -91,13 +90,13 @@ public abstract class ManagedHubHelper
 
             await context.Clients.Client(connectionId).InvokeClient(topic, payload);
 
-            Logger.LogDebug("Successfully sent message to connection {ConnectionId}", connectionId);
+            Logger.LogDebug("Successfully sent message to local connection {ConnectionId}", connectionId);
 
             return true;
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Failed to send message to connection {ConnectionId} : {Error}", connectionId, ex.Message);
+            Logger.LogWarning(ex, "Failed to send message to local connection {ConnectionId} : {Error}", connectionId, ex.Message);
             return false;
         }
     }

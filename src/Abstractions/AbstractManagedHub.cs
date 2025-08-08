@@ -2,10 +2,9 @@
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
@@ -13,22 +12,22 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
 {
     private readonly ManagedSignalRConfiguration _config;
     private readonly ILogger<AbstractManagedHub> _logger;
-    private readonly IUserConnectionCache _userConnectionCache;
+    private readonly IConnectionTracker _tracker;
     private readonly IServiceProvider _serviceProvider;
-
 
     internal AbstractManagedHub
     (
         ILogger<AbstractManagedHub> logger,
         ManagedSignalRConfiguration config,
-        IServiceProvider serviceProvider,
-        IUserConnectionCache userConnectionCache
+        IServiceProvider serviceProvider
     )
     {
         _logger = logger;
         _config = config;
         _serviceProvider = serviceProvider;
-        _userConnectionCache = userConnectionCache;
+
+        // retrieve the IConnectionTracker<ConcreteType> for the this implementation of managed hub
+        _tracker = (IConnectionTracker)_serviceProvider.GetRequiredService(typeof(IConnectionTracker<>).MakeGenericType(GetType()));
     }
 
     /// <summary>
@@ -41,9 +40,8 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     {
         await base.OnConnectedAsync();
 
-        
-        // add the connection to the list of connections associated with the user
-        _userConnectionCache.AddConnection(this.GetType(), Context.UserIdentifier,  Context.ConnectionId, AppInfo.InstanceId);
+
+        await _tracker.TrackAsync(Context);
         
         try
         {
@@ -54,15 +52,12 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
         }
         catch (Exception ex)
         {
-            // Failed to cache the updated object => Log, abort, and clean up
+            // untrack the connection
+            await _tracker.UntrackAsync(Context);
+
             Context.Abort();
 
-            _logger.LogError(
-                "Failed to cache the new connection for user {UserId}:{ConnectionId}. Forcibly closed the connection. Exception: {ExceptionMessage}",
-                Context.UserIdentifier, Context.ConnectionId, ex.Message);
-
-            // remove the connection
-            _userConnectionCache.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
+            _logger.LogError($"Failed to publish connection event:\t{ex.Message}");
 
             return;
         }
@@ -81,7 +76,7 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     {
         await base.OnDisconnectedAsync(exception);
 
-        _userConnectionCache.RemoveConnection(this.GetType(), Context.UserIdentifier, Context.ConnectionId);
+        await _tracker.UntrackAsync(Context);
 
         try
         {
@@ -92,7 +87,7 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("OnDisconnectedAsync failed to run to completion. Exception: {ExceptionMessage}", ex.Message);
+            _logger.LogError($"Failed to publish disconnection event:\t{ex.Message}");
         }
 
         // Invoke the disconnection hook for custom logic
