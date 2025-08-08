@@ -135,6 +135,14 @@ public class ManagedSignalRConfiguration
         return config;
     }
 
+    /// <summary>
+    /// Gets all hub endpoint options for dispatching purposes
+    /// </summary>
+    /// <returns>All configured hub endpoint options</returns>
+    internal IEnumerable<HubEndpointOptions> GetAllHubEndpointOptions()
+    {
+        return Options.AsReadOnly();
+    }
 }
 
 public enum DeploymentMode

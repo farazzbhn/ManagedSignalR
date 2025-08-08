@@ -34,8 +34,8 @@ public static class ServiceCollectionExtensions
         // Register the connection tracker as an open generic singleton
         services.AddSingleton(typeof(IConnectionTracker<>), typeof(ConnectionTracker<>));
 
-
-
+        // Register the hub command dispatcher
+        services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
 
         // Register the managed hub helper based on the deployment mode
 
@@ -59,9 +59,6 @@ public static class ServiceCollectionExtensions
 
             // using the local memory cache
         }
-
-
-
 
         /*********************************
          *     SignalR Configuration     *

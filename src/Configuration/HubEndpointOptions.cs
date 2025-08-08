@@ -134,6 +134,16 @@ public sealed class HubEndpointOptions
     }
 
     /// <summary>
+    /// Checks if this hub configuration has a specific topic
+    /// </summary>
+    /// <param name="topic">The topic to check</param>
+    /// <returns>True if the topic is configured for this hub</returns>
+    internal bool HasTopic(string topic)
+    {
+        return _inbound.ContainsKey(topic);
+    }
+
+    /// <summary>
     /// Returns to the parent <see cref="ManagedSignalRConfiguration"/> builder
     /// to allow configuring additional hubs or global settings.
     /// </summary>
