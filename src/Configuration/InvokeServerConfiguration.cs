@@ -3,14 +3,14 @@ using ManagedLib.ManagedSignalR.Types.Exceptions;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
-public abstract class InvokeServerMapping
+public abstract class InvokeServerConfiguration
 {
     internal string? Topic { get; set; } = null;
     internal Type? HandlerType { get; set; } = null;
     internal abstract dynamic Deserialize(string payload);
 }
 
-public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
+public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguration
 {
     internal Func<string, TModel> Deserializer { get; private set; } = message => System.Text.Json.JsonSerializer.Deserialize<TModel>(message)!;
 
@@ -20,7 +20,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// <b>Required</b> —
     /// Sets the topic for incoming messages
     /// </summary>
-    public InvokeServerMapping<TModel> OnTopic(string topic)
+    public InvokeServerConfiguration<TModel> OnTopic(string topic)
     {
         Topic = topic;
         return this;
@@ -30,7 +30,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// <b>Optional</b> —
     /// Overrides the default <see cref="System.Text.Json.JsonSerializer"/> 
     /// </summary>
-    public InvokeServerMapping<TModel> UseDeserializer(Func<string, TModel> deserializer)
+    public InvokeServerConfiguration<TModel> UseDeserializer(Func<string, TModel> deserializer)
     {
         this.Deserializer = deserializer;
         return this;
@@ -39,7 +39,7 @@ public sealed class InvokeServerMapping<TModel> : InvokeServerMapping
     /// <summary>
     /// <b>Required</b> | Sets the handler type for processing messages 
     /// </summary>
-    public InvokeServerMapping<TModel> UseHandler<THandler>() where THandler : IHubCommandHandler<TModel>
+    public InvokeServerConfiguration<TModel> UseHandler<THandler>() where THandler : IHubCommandHandler<TModel>
     {
         HandlerType = typeof(THandler);
         return this;

@@ -1,7 +1,7 @@
-﻿namespace ManagedLib.ManagedSignalR.Core;
+﻿namespace ManagedLib.ManagedSignalR.Types;
 
 
-internal class ConnectionGroup
+internal class ConnectionSet
 {
     private readonly HashSet<string> _connections = new();
 
@@ -9,15 +9,14 @@ internal class ConnectionGroup
 
 
     /// <summary>
-    /// Ensures that a new <see cref="ConnectionGroup"/> is created with a valid connection ID.
+    /// Ensures that a new <see cref="ConnectionSet"/> is created with a valid connection ID.
     /// </summary>
     /// <param name="connectionId"></param>
     /// <exception cref="ArgumentException"></exception>
-    internal ConnectionGroup(string connectionId)
+    internal ConnectionSet(string connectionId)
     {
         if (string.IsNullOrWhiteSpace(connectionId))
             throw new ArgumentException("ConnectionId cannot be null or empty.", nameof(connectionId));
-
 
         AddConnection(connectionId);
     }

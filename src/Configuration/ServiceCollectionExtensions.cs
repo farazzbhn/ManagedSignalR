@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
         Action<ManagedSignalRConfiguration> configurer
     )
     {
-        // Create and configure the hub configuration
+        // GetTracker and configure the hub configuration
         var configuration = new ManagedSignalRConfiguration(services);
         configurer.Invoke(configuration);
 
@@ -49,7 +49,7 @@ public static class ServiceCollectionExtensions
         else if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
         {
             // register the single-instance managed hub helper 
-            services.AddScoped<ManagedHubHelper, LocalManagedHubHelper>();
+            services.AddScoped<IManagedHubHelper<>, ManagedHubHelper<>>();
 
             // Register the distributed managed hub helper
             //services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();

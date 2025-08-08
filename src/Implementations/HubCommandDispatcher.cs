@@ -29,6 +29,10 @@ public class HubCommandDispatcher : IHubCommandDispatcher
         _logger = logger;
     }
 
+
+
+
+
     /// <summary>
     /// Dispatches a command to its appropriate handler based on the topic
     /// </summary>
@@ -43,19 +47,25 @@ public class HubCommandDispatcher : IHubCommandDispatcher
     /// <exception cref="HandlerFailedException">
     /// Thrown when the handler's invocation throws an exception.
     /// </exception>
-    public async Task DispatchAsync(Type hubType, string topic, string message, HubCallerContext context)
+    public async Task FireAndForget(Type hubType, string topic, string message, HubCallerContext context)
     {
         try
         {
-            // Retrieve the options configured for this hub endpoint
-            HubEndpointOptions hubEndpointOptions = _config.GetHubEndpointOptions(hubType);
+            // Retrieve the endpoint configuration configured for this hub
+            EndpointConfiguration configuration = _config.GetHubEndpointOptions(hubType);
 
-            // Deserialize the payload into a specific c# type based on topic and message
-            dynamic command = hubEndpointOptions.Deserialize(topic, message);
+            // retrieve the route object associated with the topic
+            if (!configuration.InvokeServerConfigurations.TryGetValue(topic, out InvokeServerConfiguration? route))
+                throw new MissingConfigurationException($"No configuration found for topic {topic}. Please ensure it is registered with ConfigureInvokeServer<TModel>() method.");
+
+
+            dynamic command = route.Deserialize(message);
+
 
             // Retrieve the handler type for the topic as registered configuration. 
             // i.e, IHubCommandHandler<Command> where Command is the type of the command being handled.
-            Type handlerType = hubEndpointOptions.GetHandlerType(topic);
+            Type handlerType = route.HandlerType ?? throw new MisconfiguredException($"Handler type not specified for topic {topic}. Please call UseHandler() to register the respective handler");
+
 
             // Get the handler instance from the service provider
             object? handler = _serviceProvider.GetService(handlerType);

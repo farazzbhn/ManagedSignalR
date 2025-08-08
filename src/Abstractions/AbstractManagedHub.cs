@@ -2,30 +2,23 @@
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
-using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 public abstract class AbstractManagedHub : Hub<IManagedHubClient>
 {
-    protected readonly IConnectionTracker Tracker;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IConnectionTracker _connections;
     private readonly IHubCommandDispatcher _dispatcher;
 
     internal AbstractManagedHub
     (
         ManagedSignalRConfiguration config,
-        IServiceProvider serviceProvider,
+        IConnectionTrackerFactory connectionTrackerFactory,
         IHubCommandDispatcher dispatcher
     )
     {
-        _serviceProvider = serviceProvider;
         _dispatcher = dispatcher;
-
-        // retrieve the IConnectionTracker<ConcreteType> for the this implementation of managed hub
-        Tracker = (IConnectionTracker)_serviceProvider.GetRequiredService(typeof(IConnectionTracker<>).MakeGenericType(GetType()));
+        _connections = connectionTrackerFactory.GetTracker(GetType());
     }
 
     /// <summary>
@@ -38,7 +31,7 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     {
         await base.OnConnectedAsync();
 
-        await Tracker.TrackAsync(Context);
+        await _connections.TrackAsync(Context);
   
         // Invoke the connection hook for custom logic
         await OnConnectedHookAsync();
@@ -54,7 +47,7 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     {
         await base.OnDisconnectedAsync(exception);
 
-        await Tracker.UntrackAsync(Context);
+        await _connections.UntrackAsync(Context);
 
         // Invoke the disconnection hook for custom disconnection logic
         await OnDisconnectedHookAsync();
@@ -74,8 +67,6 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
 
     /// <summary>
     /// Invoked by the client to process a message routed by topic.
-    /// <br/><br/>
-    /// The method delegates to the injected <see cref="IHubCommandDispatcher"/> to handle the dispatching logic.
     /// </summary>
     /// <param name="topic">The message topic used for routing to the appropriate handler.</param>
     /// <param name="message">The serialized message payload.</param>
@@ -85,8 +76,5 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     /// <exception cref="HandlerFailedException">
     /// Thrown when the handler's invocation throws an exception.
     /// </exception>
-    public async Task InvokeServer(string topic, string message)
-    {
-        await _dispatcher.DispatchAsync(GetType(), topic, message, Context);
-    }
+    public Task InvokeServer(string topic, string message) => _dispatcher.FireAndForget(GetType(), topic, message, Context);
 }

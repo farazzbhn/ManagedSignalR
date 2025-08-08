@@ -10,7 +10,7 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// </summary>
 public class ManagedSignalRConfiguration
 {
-    private List<HubEndpointOptions> Options { get; }
+    private List<EndpointConfiguration> EndpointConfigurations { get; }
 
     public string CachePrefix { get; set; } = "msr:";
 
@@ -27,7 +27,7 @@ public class ManagedSignalRConfiguration
         IServiceCollection services
     )
     {
-        Options = new List<HubEndpointOptions>();
+        EndpointConfigurations = new List<EndpointConfiguration>();
         _services = services;
     }
 
@@ -99,15 +99,15 @@ public class ManagedSignalRConfiguration
     /// </summary>
     /// <typeparam name="THub">Hub type to configure</typeparam>
     /// <returns>Configuration builder for the hub</returns>
-    public HubEndpointOptions AddHub<THub>() where THub : ManagedHub
+    public EndpointConfiguration AddHub<THub>() where THub : AbstractManagedHub
     {
         // Find or create mapping for the hub
-        var config = Options.FirstOrDefault(m => m.HubType == typeof(THub));
+        var config = EndpointConfigurations.FirstOrDefault(m => m.HubType == typeof(THub));
 
         if (config == null)
         {
-            config = new HubEndpointOptions(typeof(THub),this, _services);
-            Options.Add(config);
+            config = new EndpointConfiguration(typeof(THub),this, _services);
+            EndpointConfigurations.Add(config);
         }
         return config;
     }
@@ -117,17 +117,17 @@ public class ManagedSignalRConfiguration
 
 
     /// <summary>
-    /// Finds the <see cref="HubEndpointOptions"/> associated with the SignalR hub of provided type
+    /// Finds the <see cref="EndpointConfiguration"/> associated with the SignalR hub of provided type
     /// </summary>
     /// <returns>Hub configuration</returns>
     /// <exception cref="MissingConfigurationException">configuration not found</exception>
     /// <exception cref="InvalidOperationException">invalid input type</exception>
-    internal HubEndpointOptions GetHubEndpointOptions(Type type)
+    internal EndpointConfiguration GetHubEndpointOptions(Type type)
     {
-        if (!typeof(ManagedHub).IsAssignableFrom(type))
+        if (!typeof(AbstractManagedHub).IsAssignableFrom(type))
             throw new InvalidOperationException($"Type {type.FullName} is not a valid ManagedHub type.");
 
-        HubEndpointOptions? config = Options.SingleOrDefault(x => x.HubType == type);
+        EndpointConfiguration? config = EndpointConfigurations.SingleOrDefault(x => x.HubType == type);
 
         if (config is null)
             throw new MissingConfigurationException($"No configuration found for hub type {type.FullName}. Please ensure it is registered with AddHub<THub>() method.");
@@ -139,9 +139,9 @@ public class ManagedSignalRConfiguration
     /// Gets all hub endpoint options for dispatching purposes
     /// </summary>
     /// <returns>All configured hub endpoint options</returns>
-    internal IEnumerable<HubEndpointOptions> GetAllHubEndpointOptions()
+    internal IEnumerable<EndpointConfiguration> GetAllHubEndpointOptions()
     {
-        return Options.AsReadOnly();
+        return EndpointConfigurations.AsReadOnly();
     }
 }
 

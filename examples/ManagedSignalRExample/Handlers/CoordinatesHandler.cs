@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.SignalR;
 namespace ManagedSignalRExample.Handlers;
 public class CoordinatesHandler : IHubCommandHandler<Coordinates>
 {
-    private readonly ManagedHubHelper _hubHelper;
+    private readonly ManagedHubHelperUtils _hubHelper;
 
-    public CoordinatesHandler(ManagedHubHelper hubHelper)
+    public CoordinatesHandler(ManagedHubHelperUtils hubHelper)
     {
         _hubHelper = hubHelper;
     }

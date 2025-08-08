@@ -4,7 +4,7 @@ using ManagedLib.ManagedSignalR.Configuration;
 namespace ManagedSignalRExample.Hubs;
 public class ChatHub : AbstractManagedHub
 {
-    private readonly ManagedHubHelper _helper;
+    private readonly ManagedHubHelperUtils _helper;
 
     public ChatHub
     (
@@ -12,7 +12,7 @@ public class ChatHub : AbstractManagedHub
         ILogger<AbstractManagedHub> logger, 
         IDistributedCache cacheProvider, 
         IServiceProvider serviceProvider,
-        ManagedHubHelper helper
+        ManagedHubHelperUtils helper
     ) : base(globalConfiguration, logger, cacheProvider, serviceProvider)
     {
         _helper = helper;

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Core;
+using ManagedLib.ManagedSignalR.Types;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
@@ -9,9 +10,8 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : AbstractManagedHub
 {
 
-    private readonly ConcurrentDictionary<string, ConnectionGroup> _groups = new();
+    private readonly ConcurrentDictionary<string, ConnectionSet> _sets = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
-
 
 
     public async Task TrackAsync(HubCallerContext context)
@@ -23,16 +23,16 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
         await sem.WaitAsync();
         try
         {
-            if (!_groups.TryGetValue(key, out ConnectionGroup? group) || group is null)
+            if (!_sets.TryGetValue(key, out ConnectionSet? set) || set is null)
             {
-                // Create new group for this user
-                group = new ConnectionGroup(connectionId);
-                _groups[key] = group;
+                // GetTracker new group for this user
+                set = new ConnectionSet(connectionId);
+                _sets[key] = set;
             }
             else
             {
                 // Add connection to existing group
-                group.AddConnection(connectionId);
+                set.AddConnection(connectionId);
             }
         }
         finally
@@ -50,14 +50,14 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
         await sem.WaitAsync();
         try
         {
-            if (_groups.TryGetValue(key, out ConnectionGroup? group) && group is not null)
+            if (_sets.TryGetValue(key, out ConnectionSet? set) && set is not null)
             {
-                bool removed = group.RemoveConnection(connectionId);
+                bool removed = set.RemoveConnection(connectionId);
                 
                 // If no more connections for this user, remove the group and clean up the lock
-                if (group.Connections.Count == 0)
+                if (set.Connections.Count == 0)
                 {
-                    _groups.TryRemove(key, out _);
+                    _sets.TryRemove(key, out _);
                     _locks.TryRemove(key, out var lockToDispose);
                     lockToDispose?.Dispose();
                 }
@@ -68,5 +68,7 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
             sem.Release();
         }
     }
+
+
 }
 
