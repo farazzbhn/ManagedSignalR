@@ -12,29 +12,36 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
     private readonly ManagedSignalRConfiguration _configuration;
     private readonly IHubContext<THub, IManagedHubClient> _context;
     private readonly ILogger<ManagedHubHelperBase<THub>> _logger;
+    private readonly IConnectionTracker<THub> _connectionTracker;
+
     protected ManagedHubHelperBase
     (
         ManagedSignalRConfiguration configuration, 
         IHubContext<THub, IManagedHubClient> context,
-        ILogger<ManagedHubHelperBase<THub>> logger
+        ILogger<ManagedHubHelperBase<THub>> logger, 
+        IConnectionTracker<THub> connectionTracker
     )
     {
         _configuration = configuration;
         _context = context;
         _logger = logger;
+        _connectionTracker = connectionTracker;
     }
 
 
+    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier)
+    {
+        return _connectionTracker.ListConnectionIdsAsync(userIdentifier);
+    }
 
-    public abstract Task SendToUser(string userIdentifier, object message);
+    public abstract Task SendToUserAsync(object message, string? userIdentifier, int? maxConcurrency = null);
 
-    public abstract Task SendToConnection(string connectionId, object message);
-
+    public abstract Task SendToConnectionIdAsync(object message, string connectionId);
 
 
     protected (string Topic, string Payload) Serialize(dynamic message)
     {
-        EndpointConfiguration configuration = _configuration.GetHubEndpointOptions(typeof(THub));
+        EndpointConfiguration configuration = _configuration.FetchEndpointConfiguration(typeof(THub));
 
         if (!configuration.InvokeClientConfigurations.TryGetValue((Type) message.GetType(), out InvokeClientConfiguration? route))
             throw new MissingConfigurationException($"No configuration found for message type {typeof(MessageProcessingHandler)}. Please ensure it is registered with ConfigureInvokeClient<TModel>() method.");
@@ -46,6 +53,7 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
         return (topic, payload);
     }
 
+
     /// <summary>
     /// Tries to invoke the <see cref="IManagedHubClient.InvokeClient"/> on a SignalR connection.
     /// </summary>
@@ -54,7 +62,7 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
     /// <param name="topic">The topic name to invoke on the client.</param>
     /// <param name="payload">The serialized message payload.</param>
     /// <returns><c>true</c> if the client invocation succeeded; otherwise, <c>false</c>.</returns>
-    internal async Task<bool> TryInvokeClient
+    internal async Task<bool> TryInvokeClientAsync
     (
         string connectionId,
         string topic,

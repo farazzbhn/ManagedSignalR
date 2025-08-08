@@ -79,6 +79,7 @@ public class ManagedSignalRConfiguration
 
 
 
+
     // DEPLOYMENT MODE CONFIGURATION
     public ManagedSignalRConfiguration AsSingleInstance()
     {
@@ -90,6 +91,7 @@ public class ManagedSignalRConfiguration
         DeploymentMode = Configuration.DeploymentMode.Distributed;
         return this;
     }
+
 
 
 
@@ -115,14 +117,13 @@ public class ManagedSignalRConfiguration
 
 
 
-
     /// <summary>
     /// Finds the <see cref="EndpointConfiguration"/> associated with the SignalR hub of provided type
     /// </summary>
     /// <returns>Hub configuration</returns>
     /// <exception cref="MissingConfigurationException">configuration not found</exception>
     /// <exception cref="InvalidOperationException">invalid input type</exception>
-    internal EndpointConfiguration GetHubEndpointOptions(Type type)
+    internal EndpointConfiguration FetchEndpointConfiguration(Type type)
     {
         if (!typeof(AbstractManagedHub).IsAssignableFrom(type))
             throw new InvalidOperationException($"Type {type.FullName} is not a valid ManagedHub type.");
@@ -135,14 +136,6 @@ public class ManagedSignalRConfiguration
         return config;
     }
 
-    /// <summary>
-    /// Gets all hub endpoint options for dispatching purposes
-    /// </summary>
-    /// <returns>All configured hub endpoint options</returns>
-    internal IEnumerable<EndpointConfiguration> GetAllHubEndpointOptions()
-    {
-        return EndpointConfigurations.AsReadOnly();
-    }
 }
 
 public enum DeploymentMode

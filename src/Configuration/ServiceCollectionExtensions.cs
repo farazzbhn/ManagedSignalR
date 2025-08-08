@@ -49,10 +49,7 @@ public static class ServiceCollectionExtensions
         else if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
         {
             // register the single-instance managed hub helper 
-            services.AddScoped<IManagedHubHelper<>, ManagedHubHelper<>>();
-
-            // Register the distributed managed hub helper
-            //services.AddScoped<ManagedHubHelper, DistributedManagedHubHelper>();
+            services.AddScoped(typeof(IManagedHubHelper<>), typeof(LocalManagedHubHelper<>));
         }
         else // if (configuration.DeploymentMode is DeploymentMode.Distributed)
         {

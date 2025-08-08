@@ -52,7 +52,7 @@ public class HubCommandDispatcher : IHubCommandDispatcher
         try
         {
             // Retrieve the endpoint configuration configured for this hub
-            EndpointConfiguration configuration = _config.GetHubEndpointOptions(hubType);
+            EndpointConfiguration configuration = _config.FetchEndpointConfiguration(hubType);
 
             // retrieve the route object associated with the topic
             if (!configuration.InvokeServerConfigurations.TryGetValue(topic, out InvokeServerConfiguration? route))
@@ -85,14 +85,14 @@ public class HubCommandDispatcher : IHubCommandDispatcher
             }
 
             _logger.LogDebug("Dispatching command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}", 
-                command.GetType().Name, handlerType.Name, topic, hubType.Name);
+                (object)command.GetType().Name, handlerType.Name, topic, hubType.Name);
 
             try
             {
                 await (Task)handleMethod!.Invoke(handler, [command, context])!;
                 
-                _logger.LogDebug("Successfully dispatched command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}", 
-                    command.GetType().Name, handlerType.Name, topic, hubType.Name);
+                _logger.LogDebug("Successfully dispatched command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}",
+                    (object)command.GetType().Name, handlerType.Name, topic, hubType.Name);
             }
             catch (TargetInvocationException tie) when (tie.InnerException != null)
             {

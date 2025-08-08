@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Core;
-using ManagedLib.ManagedSignalR.Types;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
@@ -17,22 +16,22 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
     public async Task TrackAsync(HubCallerContext context)
     {
         string connectionId = context.ConnectionId;
-        string key = context.UserIdentifier ?? Constants.Unauthenticated;
+        string key = context.UserIdentifier ?? string.Empty;
 
         SemaphoreSlim sem = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await sem.WaitAsync();
         try
         {
-            if (!_sets.TryGetValue(key, out ConnectionSet? set) || set is null)
+            if (_sets.TryGetValue(key, out ConnectionSet? set) && set is not null)
+            {
+                // Add connection to existing group
+                set.AddConnection(connectionId);
+            }
+            else
             {
                 // GetTracker new group for this user
                 set = new ConnectionSet(connectionId);
                 _sets[key] = set;
-            }
-            else
-            {
-                // Add connection to existing group
-                set.AddConnection(connectionId);
             }
         }
         finally
@@ -44,7 +43,7 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
     public async Task UntrackAsync(HubCallerContext context)
     {
         string connectionId = context.ConnectionId;
-        string key = context.UserIdentifier ?? Constants.Unauthenticated;
+        string key = context.UserIdentifier ?? string.Empty;
 
         SemaphoreSlim sem = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await sem.WaitAsync();
@@ -55,7 +54,7 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
                 bool removed = set.RemoveConnection(connectionId);
                 
                 // If no more connections for this user, remove the group and clean up the lock
-                if (set.Connections.Count == 0)
+                if (set.ConnectionIds.Count == 0)
                 {
                     _sets.TryRemove(key, out _);
                     _locks.TryRemove(key, out var lockToDispose);
@@ -69,6 +68,18 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
         }
     }
 
+    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier)
+    {
+        string key = userIdentifier ?? string.Empty;
 
+        if (_sets.TryGetValue(key, out ConnectionSet? set) && set is not null)
+        {
+            // Return a copy of the connection IDs to avoid exposing internal state
+            return Task.FromResult(set.ConnectionIds.ToArray());
+        }
+
+        // No connections found for the given userIdentifier
+        return Task.FromResult(Array.Empty<string>());
+    }
 }
 

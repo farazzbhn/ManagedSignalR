@@ -1,12 +1,12 @@
-﻿namespace ManagedLib.ManagedSignalR.Types;
+﻿namespace ManagedLib.ManagedSignalR.Implementations;
 
 
 internal class ConnectionSet
 {
-    private readonly HashSet<string> _connections = new();
 
-    public IReadOnlyCollection<string> Connections => _connections;
+    private readonly HashSet<string> _connectionIds = new();
 
+    public IReadOnlyCollection<string> ConnectionIds => _connectionIds;
 
     /// <summary>
     /// Ensures that a new <see cref="ConnectionSet"/> is created with a valid connection ID.
@@ -22,27 +22,26 @@ internal class ConnectionSet
     }
 
 
-
     public void AddConnection(string connectionId)
     {
         if (string.IsNullOrWhiteSpace(connectionId))
             throw new ArgumentException("ConnectionId cannot be null or empty.", nameof(connectionId));
 
-        lock (_connections)
+        lock (_connectionIds)
         {
-            _connections.Add(connectionId);
+            _connectionIds.Add(connectionId);
         }
     }
 
     public bool RemoveConnection(string connectionId)
     {
-        lock (_connections)
+        lock (_connectionIds)
         {
-            string? connectionToRemove = _connections.FirstOrDefault(x => x == connectionId);
+            string? connectionToRemove = _connectionIds.FirstOrDefault(x => x == connectionId);
 
             if (connectionToRemove != null)
             {
-                return _connections.Remove(connectionToRemove);
+                return _connectionIds.Remove(connectionToRemove);
             }
 
             return false;
