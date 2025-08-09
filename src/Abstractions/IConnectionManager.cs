@@ -33,9 +33,6 @@ public interface IConnectionManager
     /// </remarks>
     public string[] UserConnections(string? userIdentifier);
 
-    //public Task AddToRoomAsync(string? connectionId, string roomId);
-
-    //public Task RemoveFromRoomAsync(string? connectionId, string roomId);
 
 }
 

@@ -45,5 +45,4 @@ public interface IManagedHubClient
             return false;
         }
     }
-
 }
