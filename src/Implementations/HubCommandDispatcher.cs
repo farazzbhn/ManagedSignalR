@@ -84,25 +84,25 @@ public class HubCommandDispatcher : IHubCommandDispatcher
                 throw new MissingMethodException($"Handle method not found on handler type {handlerType}");
             }
 
-            _logger.LogDebug("Dispatching command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}", 
+            _logger.LogDebug("Dispatching command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}",
                 (object)command.GetType().Name, handlerType.Name, topic, hubType.Name);
 
             try
             {
                 await (Task)handleMethod!.Invoke(handler, [command, context])!;
-                
+
                 _logger.LogDebug("Successfully dispatched command of type {CommandType} to handler {HandlerType} for topic {Topic} on hub {HubType}",
                     (object)command.GetType().Name, handlerType.Name, topic, hubType.Name);
             }
             catch (TargetInvocationException tie) when (tie.InnerException != null)
             {
-                _logger.LogError(tie.InnerException, "Handler {HandlerType} failed to process command for topic {Topic} on hub {HubType}", 
+                _logger.LogError(tie.InnerException, "Handler {HandlerType} failed to process command for topic {Topic} on hub {HubType}",
                     handlerType.Name, topic, hubType.Name);
                 throw new HandlerFailedException(handlerType, tie.InnerException);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Handler {HandlerType} failed to process command for topic {Topic} on hub {HubType}", 
+                _logger.LogError(ex, "Handler {HandlerType} failed to process command for topic {Topic} on hub {HubType}",
                     handlerType.Name, topic, hubType.Name);
                 throw new HandlerFailedException(handlerType, ex);
             }
@@ -113,4 +113,4 @@ public class HubCommandDispatcher : IHubCommandDispatcher
             throw;
         }
     }
-} 
+}

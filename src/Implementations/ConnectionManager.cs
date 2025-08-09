@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
-internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : AbstractManagedHub
+internal class ConnectionManager<THub> : IConnectionManager<THub> where THub : AbstractManagedHub
 {
 
     private readonly ConcurrentDictionary<string, ConnectionSet> _sets = new();
@@ -29,7 +29,7 @@ internal class ConnectionTracker<THub> : IConnectionTracker<THub> where THub : A
             }
             else
             {
-                // GetTracker new group for this user
+                // Resolve new group for this user
                 set = new ConnectionSet(connectionId);
                 _sets[key] = set;
             }

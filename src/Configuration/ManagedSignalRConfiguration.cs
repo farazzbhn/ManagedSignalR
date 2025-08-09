@@ -2,6 +2,7 @@
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Data;
 
 namespace ManagedLib.ManagedSignalR.Configuration;
 
@@ -11,9 +12,6 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 public class ManagedSignalRConfiguration
 {
     private List<EndpointConfiguration> EndpointConfigurations { get; }
-
-    public string CachePrefix { get; set; } = "msr:";
-
     public bool? EnableDetailedErrors { get; set; } = null;
     public int? KeepAliveInterval { get; set; } = null;
     public IList<string>? SupportedProtocols { get; set; } = null;
@@ -86,30 +84,38 @@ public class ManagedSignalRConfiguration
         DeploymentMode = Configuration.DeploymentMode.SingleInstance;
         return this;
     }
-    public ManagedSignalRConfiguration AsDistributed()
-    {
-        DeploymentMode = Configuration.DeploymentMode.Distributed;
-        return this;
-    }
-
-
-
-
+    
 
     /// <summary>
     /// Adds a managed hub 
     /// </summary>
     /// <typeparam name="THub">Hub type to configure</typeparam>
     /// <returns>Configuration builder for the hub</returns>
-    public EndpointConfiguration AddHub<THub>() where THub : AbstractManagedHub
+    public EndpointConfiguration AddManagedHub<THub>() where THub : AbstractManagedHub
     {
-        // Find or create mapping for the hub
         var config = EndpointConfigurations.FirstOrDefault(m => m.HubType == typeof(THub));
-
         if (config == null)
         {
-            config = new EndpointConfiguration(typeof(THub),this, _services);
+            config = new EndpointConfiguration(typeof(THub), this, _services);
             EndpointConfigurations.Add(config);
+
+            // Register THub with custom factory
+            _services.AddTransient<THub>(sp =>
+            {
+                // instantiate using the param-less constructor
+                THub hub = ActivatorUtilities.CreateInstance<THub>(sp);
+
+                // proceed to resolve & set internal dependencies on the hub instance
+                IConnectionManager connections = (IConnectionManager)sp.GetRequiredService(typeof(IConnectionManager<>).MakeGenericType(typeof(THub)));
+                IManagedHubHelper helper = (IManagedHubHelper) sp.GetRequiredService(typeof(IManagedHubHelper<>).MakeGenericType(typeof(THub)));
+                IHubCommandDispatcher dispatcher = sp.GetRequiredService<IHubCommandDispatcher>();
+
+                hub.Connections = connections;
+                hub.Helper = helper;
+                hub.Dispatcher = dispatcher;
+
+                return hub;
+            });
         }
         return config;
     }
@@ -131,7 +137,7 @@ public class ManagedSignalRConfiguration
         EndpointConfiguration? config = EndpointConfigurations.SingleOrDefault(x => x.HubType == type);
 
         if (config is null)
-            throw new MissingConfigurationException($"No configuration found for hub type {type.FullName}. Please ensure it is registered with AddHub<THub>() method.");
+            throw new MissingConfigurationException($"No configuration found for hub type {type.FullName}. Please ensure it is registered with AddManagedHub<THub>() method.");
 
         return config;
     }

@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 
-internal class LocalManagedHubHelper<THub> :  ManagedHubHelperBase<THub> where THub : AbstractManagedHub
+internal class SingleInstanceManagedHubHelper<THub> :  ManagedHubHelperBase<THub> where THub : AbstractManagedHub
 {
-    public LocalManagedHubHelper(ManagedSignalRConfiguration configuration, IHubContext<THub, IManagedHubClient> context, ILogger<ManagedHubHelperBase<THub>> logger, IConnectionTracker<THub> connectionTracker) : base(configuration, context, logger, connectionTracker)
+    public SingleInstanceManagedHubHelper(ManagedSignalRConfiguration configuration, IHubContext<THub, IManagedHubClient> context, ILogger<ManagedHubHelperBase<THub>> logger, IConnectionManager<THub> connectionManager) : base(configuration, context, logger, connectionManager)
     {
     }
 

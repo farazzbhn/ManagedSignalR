@@ -2,7 +2,7 @@
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-internal interface IConnectionTracker
+public interface IConnectionManager
 {
     /// <summary>
     /// Tracks a new connection associated with a user within the context of a specific SignalR hub.
@@ -29,7 +29,7 @@ internal interface IConnectionTracker
     /// If <paramref name="userIdentifier"/> is null, returns connection IDs
     /// that are anonymous or not associated with any user within the hub context.
     /// </remarks>
-    internal Task<string[]> ListConnectionIdsAsync(string? userIdentifier);
+    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier);
 }
 
-internal interface IConnectionTracker<THub> : IConnectionTracker where THub : AbstractManagedHub { }
+internal interface IConnectionManager<THub> : IConnectionManager where THub : AbstractManagedHub { }

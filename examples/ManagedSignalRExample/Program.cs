@@ -15,7 +15,7 @@ builder.Services.AddManagedSignalR(config =>
     {
         config.AsSingleInstance();
 
-        config.AddHub<ApplicationHub>()
+        config.AddManagedHub<MyHub>()
             // Messages of type Alert are routed to client-side method InvokeClient("alert", "{...}") with topic:alert
             // and serialized using the below serializer ( or default System.Text.Json if not available ) 
             .ConfigureInvokeClient<Alert>(cfg =>
@@ -64,14 +64,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseRouting();  // ✅ Required before UseAuthorization & MapControllers
+app.UseRouting();                                       // ✅ Required before UseAuthorization & MapControllers
 
 app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    endpoints.MapHub<ApplicationHub>("/hub"); // ✅ Maps the API controllers
+    endpoints.MapHub<MyHub>("/myhub");          // ✅ Maps the API controllers
 });
 
 app.Run();

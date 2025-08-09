@@ -5,7 +5,7 @@ Console.WriteLine("Hello, World!");
 
 // Build the connection
 var connection = new HubConnectionBuilder()
-    .WithUrl("http://localhost:5005/hub")
+    .WithUrl("http://localhost:5005/myhub")
     .WithAutomaticReconnect()
     .Build();
 

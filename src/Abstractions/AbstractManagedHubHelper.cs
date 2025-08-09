@@ -12,26 +12,26 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
     private readonly ManagedSignalRConfiguration _configuration;
     private readonly IHubContext<THub, IManagedHubClient> _context;
     private readonly ILogger<ManagedHubHelperBase<THub>> _logger;
-    private readonly IConnectionTracker<THub> _connectionTracker;
+    private readonly IConnectionManager<THub> _connectionManager;
 
     protected ManagedHubHelperBase
     (
         ManagedSignalRConfiguration configuration, 
         IHubContext<THub, IManagedHubClient> context,
         ILogger<ManagedHubHelperBase<THub>> logger, 
-        IConnectionTracker<THub> connectionTracker
+        IConnectionManager<THub> connectionManager
     )
     {
         _configuration = configuration;
         _context = context;
         _logger = logger;
-        _connectionTracker = connectionTracker;
+        _connectionManager = connectionManager;
     }
 
 
     public Task<string[]> ListConnectionIdsAsync(string? userIdentifier)
     {
-        return _connectionTracker.ListConnectionIdsAsync(userIdentifier);
+        return _connectionManager.ListConnectionIdsAsync(userIdentifier);
     }
 
     public abstract Task SendToUserAsync(object message, string? userIdentifier, int? maxConcurrency = null);
