@@ -18,7 +18,6 @@ public class MyHub : ManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
-
         Clients.Client(Context.ConnectionId).TryInvokeClient<MyHub>(alert);
 
         // retrieve the list of connectionIds associated with the current user
