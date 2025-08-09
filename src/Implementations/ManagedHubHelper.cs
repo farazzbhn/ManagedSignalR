@@ -8,11 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace ManagedLib.ManagedSignalR.Implementations;
 
 
-internal class SingleInstanceAbstractManagedHubHelper<THub> :  ManagedHubHelperBase<THub> where THub : ManagedHub
+internal class SingleInstanceAbstractManagedHubHelper<THub>   where THub : ManagedHub
 {
-    public SingleInstanceAbstractManagedHubHelper(IConnectionManager<THub> connections, ILogger<ManagedHubHelperBase<THub>> logger, IHubContext<THub, IManagedHubClient> context) : base(connections, logger, context)
-    {
-    }
+    
 
     public override async Task SendToUserAsync(object message, string? userIdentifier, int? maxConcurrency = null)
     {
