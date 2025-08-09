@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedSignalRExample.Hubs;
 using ManagedSignalRExample.Models;
 using Microsoft.AspNetCore.SignalR;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.SignalR;
 namespace ManagedSignalRExample.Handlers;
 public class CoordinatesHandler : IHubCommandHandler<Coordinates>
 {
+    private readonly IHubContext<MyHub> _context;
+
     public async Task Handle(Coordinates request, HubCallerContext context)
     {
         var connectionId = context.ConnectionId;
@@ -19,7 +22,7 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
             $"\tCoordinates: {latitude}, {longitude}" +
             $"\n\n"
         );
-
+        
         await Task.CompletedTask; // Placeholder for real async work
     }
 }

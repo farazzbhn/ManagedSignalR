@@ -6,24 +6,29 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 /// <summary>
 /// Holds mappings and other configuration options for a specific SignalR hub endpoint.
 /// </summary>
-public sealed class EndpointConfiguration
+public sealed class EndpointOptions
 {
-    private readonly IServiceCollection _services;
-    public readonly ManagedSignalRConfiguration Parent;
+    internal IServiceCollection? Services { get; set; }
+    public readonly FrameworkOptions Parent;
 
-    public EndpointConfiguration
+    public EndpointOptions
     (
         Type hubType,
-        ManagedSignalRConfiguration parent,
+        FrameworkOptions parent,
         IServiceCollection services
     )
     {
         HubType = hubType;
         Parent = parent;
-        _services = services;
+        Services = services;
         _invokeServerConfigurations = new();
         _invokeClientConfigurations = new();
     }
+
+    /// <summary>
+    /// Finalize the object &amp; clear the unnecessary references
+    /// </summary>
+    internal void Seal() => Services = null;
 
 
     /// <summary>
@@ -35,8 +40,8 @@ public sealed class EndpointConfiguration
 
     private Dictionary<Type, InvokeClientConfiguration> _invokeClientConfigurations { get; set; }
 
-    public IReadOnlyDictionary<string, InvokeServerConfiguration> InvokeServerConfigurations => _invokeServerConfigurations;
-    public IReadOnlyDictionary<Type, InvokeClientConfiguration> InvokeClientConfigurations => _invokeClientConfigurations;
+    internal IReadOnlyDictionary<string, InvokeServerConfiguration> InvokeServerConfigurations => _invokeServerConfigurations;
+    internal IReadOnlyDictionary<Type, InvokeClientConfiguration> InvokeClientConfigurations => _invokeClientConfigurations;
 
 
     /// <summary>
@@ -44,7 +49,7 @@ public sealed class EndpointConfiguration
     /// </summary>
     /// <typeparam name="TOutboundMessage">Message type to send</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public EndpointConfiguration ConfigureInvokeClient<TOutboundMessage>(Action<InvokeClientConfiguration<TOutboundMessage>> configurer)
+    public EndpointOptions ConfigureInvokeClient<TOutboundMessage>(Action<InvokeClientConfiguration<TOutboundMessage>> configurer)
     {
 
         var configuration = new InvokeClientConfiguration<TOutboundMessage>();
@@ -66,13 +71,12 @@ public sealed class EndpointConfiguration
     /// </summary>
     /// <typeparam name="TInboundMessage">Message type to receive</typeparam>
     /// <param name="configurer">Configuration builder</param>
-    public EndpointConfiguration ConfigureInvokeServer<TInboundMessage>(Action<InvokeServerConfiguration<TInboundMessage>> configurer)
+    public EndpointOptions ConfigureInvokeServer<TInboundMessage>(Action<InvokeServerConfiguration<TInboundMessage>> configurer)
     {
 
         var configuration = new InvokeServerConfiguration<TInboundMessage>();
 
         configurer.Invoke(configuration);
-
 
         configuration.EnsureIsValid();
 
@@ -80,18 +84,18 @@ public sealed class EndpointConfiguration
         _invokeServerConfigurations[configuration.Topic] = configuration;
 
         // And register the scoped handler within the service provider
-        _services.AddScoped(configuration.HandlerType);
+        Services.AddScoped(configuration.HandlerType);
 
         return this;
     }
 
 
     /// <summary>
-    /// Returns to the parent <see cref="ManagedSignalRConfiguration"/> builder
+    /// Returns to the parent <see cref="FrameworkOptions"/> builder
     /// to allow configuring additional hubs or global settings.
     /// </summary>
-    /// <returns>The parent <see cref="ManagedSignalRConfiguration"/> instance for fluent chaining.</returns>
-    public ManagedSignalRConfiguration And() => Parent;
+    /// <returns>The parent <see cref="FrameworkOptions"/> instance for fluent chaining.</returns>
+    public FrameworkOptions And() => Parent;
 
 }
 

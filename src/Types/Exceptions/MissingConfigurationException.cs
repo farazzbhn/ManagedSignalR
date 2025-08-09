@@ -6,9 +6,4 @@ using System.Threading.Tasks;
 
 namespace ManagedLib.ManagedSignalR.Types.Exceptions;
 
-public class MissingConfigurationException : Exception
-{
-    public MissingConfigurationException(string message) : base(message)
-    {
-    }
-}
+public class MissingConfigurationException(string message) : Exception(message);

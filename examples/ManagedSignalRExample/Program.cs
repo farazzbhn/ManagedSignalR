@@ -13,7 +13,6 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddManagedSignalR(config =>
     {
-        config.AsSingleInstance();
 
         config.AddManagedHub<MyHub>()
             // Messages of type Alert are routed to client-side method InvokeClient("alert", "{...}") with topic:alert

@@ -13,18 +13,15 @@ namespace ManagedLib.ManagedSignalR.Implementations;
 /// </summary>
 public class HubCommandDispatcher : IHubCommandDispatcher
 {
-    private readonly ManagedSignalRConfiguration _config;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<HubCommandDispatcher> _logger;
 
     public HubCommandDispatcher
     (
-        ManagedSignalRConfiguration config,
         IServiceProvider serviceProvider,
         ILogger<HubCommandDispatcher> logger
     )
     {
-        _config = config;
         _serviceProvider = serviceProvider;
         _logger = logger;
     }
@@ -52,7 +49,7 @@ public class HubCommandDispatcher : IHubCommandDispatcher
         try
         {
             // Retrieve the endpoint configuration configured for this hub
-            EndpointConfiguration configuration = _config.FetchEndpointConfiguration(hubType);
+            EndpointOptions configuration = FrameworkOptions.Instance.GetEndpointOptions(hubType);
 
             // retrieve the route object associated with the topic
             if (!configuration.InvokeServerConfigurations.TryGetValue(topic, out InvokeServerConfiguration? route))

@@ -5,7 +5,8 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 public interface IConnectionManager
 {
     /// <summary>
-    /// Tracks a new connection associated with a user within the context of a specific SignalR hub.
+    /// <b>Internally used ~ not exposed </b> <br /><br />
+    /// Tracks a new connection associated with a user within the context of a specific SignalR hub. <br />
     /// Adds the connection ID to the user's connection set for that hub, creating a new set if needed.
     /// </summary>
     /// <param name="context">The <see cref="HubCallerContext"/> representing the connection to track.</param>
@@ -13,7 +14,8 @@ public interface IConnectionManager
     internal Task TrackAsync(HubCallerContext context);
 
     /// <summary>
-    /// Removes a tracked connection associated with a user within the context of a specific SignalR hub.
+    /// <b>Internally used ~ not exposed </b><br /><br />
+    /// Removes a tracked connection associated with a user within the context of a specific SignalR hub. <br />
     /// Removes the connection ID from the user's connection set for that hub and cleans up if no connections remain.
     /// </summary>
     /// <param name="context">The <see cref="HubCallerContext"/> representing the connection to untrack.</param>
@@ -29,7 +31,12 @@ public interface IConnectionManager
     /// If <paramref name="userIdentifier"/> is null, returns connection IDs
     /// that are anonymous or not associated with any user within the hub context.
     /// </remarks>
-    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier);
+    public string[] UserConnections(string? userIdentifier);
+
+    //public Task AddToRoomAsync(string? connectionId, string roomId);
+
+    //public Task RemoveFromRoomAsync(string? connectionId, string roomId);
+
 }
 
-internal interface IConnectionManager<THub> : IConnectionManager where THub : AbstractManagedHub { }
+internal interface IConnectionManager<THub> : IConnectionManager where THub : ManagedHub { }

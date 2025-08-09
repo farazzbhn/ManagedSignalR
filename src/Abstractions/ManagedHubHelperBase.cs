@@ -6,42 +6,37 @@ using Microsoft.Extensions.Logging;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> where THub : AbstractManagedHub
+internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> where THub : ManagedHub
 {
+    protected IConnectionManager Connections { get; }
 
-    private readonly ManagedSignalRConfiguration _configuration;
+    protected ILogger<ManagedHubHelperBase<THub>> Logger;
+
+
     private readonly IHubContext<THub, IManagedHubClient> _context;
-    private readonly ILogger<ManagedHubHelperBase<THub>> _logger;
-    private readonly IConnectionManager<THub> _connectionManager;
 
-    protected ManagedHubHelperBase
+
+    public ManagedHubHelperBase
     (
-        ManagedSignalRConfiguration configuration, 
-        IHubContext<THub, IManagedHubClient> context,
-        ILogger<ManagedHubHelperBase<THub>> logger, 
-        IConnectionManager<THub> connectionManager
+        IConnectionManager<THub> connections, 
+        ILogger<ManagedHubHelperBase<THub>> logger,
+        IHubContext<THub, IManagedHubClient> context
     )
     {
-        _configuration = configuration;
+        Connections = connections;
+        Logger = logger;
         _context = context;
-        _logger = logger;
-        _connectionManager = connectionManager;
     }
 
-
-    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier)
-    {
-        return _connectionManager.ListConnectionIdsAsync(userIdentifier);
-    }
 
     public abstract Task SendToUserAsync(object message, string? userIdentifier, int? maxConcurrency = null);
 
-    public abstract Task SendToConnectionIdAsync(object message, string connectionId);
+    public abstract Task SendToConnectionAsync(object message, string connectionId);
 
 
     protected (string Topic, string Payload) Serialize(dynamic message)
     {
-        EndpointConfiguration configuration = _configuration.FetchEndpointConfiguration(typeof(THub));
+        EndpointOptions configuration = FrameworkOptions.Instance.GetEndpointOptions(typeof(THub));
 
         if (!configuration.InvokeClientConfigurations.TryGetValue((Type) message.GetType(), out InvokeClientConfiguration? route))
             throw new MissingConfigurationException($"No configuration found for message type {typeof(MessageProcessingHandler)}. Please ensure it is registered with ConfigureInvokeClient<TModel>() method.");
@@ -55,7 +50,7 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
 
 
     /// <summary>
-    /// Tries to invoke the <see cref="IManagedHubClient.InvokeClient"/> on a SignalR connection.
+    /// Tries to invoke the <see cref=IManagedHubClientt.InvokeClient"/> on a SignalR connection.
     /// </summary>
     /// <typeparam name="THub">The type of the SignalR hub.</typeparam>
     /// <param name="connectionId">The target SignalR connection ID.</param>
@@ -72,14 +67,10 @@ internal abstract class ManagedHubHelperBase<THub> : IManagedHubHelper<THub> whe
         try
         {
             await _context.Clients.Client(connectionId).InvokeClient(topic, payload);
-
-            _logger.LogDebug("Successfully sent message to local connection {ConnectionId}", connectionId);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send message to local connection {ConnectionId} : {Error}", connectionId, ex.Message);
             return false;
         }
     }

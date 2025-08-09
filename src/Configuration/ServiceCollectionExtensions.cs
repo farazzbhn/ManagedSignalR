@@ -20,70 +20,48 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddManagedSignalR
     (
         this IServiceCollection services,
-        Action<ManagedSignalRConfiguration> configurer
+        Action<FrameworkOptions> configurer
     )
     {
-        //configure the hub configuration
-        var configuration = new ManagedSignalRConfiguration(services);
-        configurer.Invoke(configuration);
+        // Configure the framework options 
+        FrameworkOptions frameworkOptions = new FrameworkOptions(services);
+        configurer.Invoke(frameworkOptions);
 
-        // The SINGLETON configuration is used to retrieve the hub mappings and other settings
-        services.AddSingleton(configuration);
+        // Invoke the finalize method to seal and rid the object of unnecessary references
+        frameworkOptions.Seal();
+
+        // proceed to set the 'static' singleton instance 
+        FrameworkOptions.Instance = frameworkOptions;
+        
 
 
 
-        // register the IHubCommandDispatcher
         services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
-
-        // Register the IConnectionManager as an open generic singleton set for each hub
         services.AddSingleton(typeof(IConnectionManager<>), typeof(ConnectionManager<>));
+        services.AddScoped(typeof(IManagedHubHelper<>), typeof(SingleInstanceAbstractManagedHubHelper<>));
+        
 
 
+        /* SignalR Configuration Options */
 
-
-
-        // Register the managed hub helper based on the deployment mode
-        if (configuration.DeploymentMode is null)
+        services.AddSignalR(hubOptions =>
         {
-            throw new MisconfiguredException(message:
-                                                "Deployment mode is not set." +
-                                                "Please configure the system by calling 'AsSingleInstance()' or 'AsDistributed()' within the provided configurer."
-            );
-        }
-        else if (configuration.DeploymentMode is DeploymentMode.SingleInstance)
-        {
-            // register the single-instance managed hub helper 
-            services.AddScoped(typeof(IManagedHubHelper<>), typeof(SingleInstanceManagedHubHelper<>));
-        }
-        else // if (configuration.DeploymentMode is DeploymentMode.Distributed)
-        {
-
-            // using the local memory cache
-        }
-
-
-
-
-        /*********************************
-         *     SignalR Configuration     *
-         *********************************/
-        services.AddSignalR(options =>
-        {
-            if (configuration.EnableDetailedErrors.HasValue)
+            if (frameworkOptions.EnableDetailedErrors.HasValue)
             {
-                options.EnableDetailedErrors = configuration.EnableDetailedErrors.Value;
+                hubOptions.EnableDetailedErrors = frameworkOptions.EnableDetailedErrors.Value;
             }
 
-            if (configuration.KeepAliveInterval.HasValue)
+            if (frameworkOptions.KeepAliveInterval.HasValue)
             {
-                options.KeepAliveInterval = TimeSpan.FromSeconds(configuration.KeepAliveInterval.Value);
+                hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(frameworkOptions.KeepAliveInterval.Value);
             }
 
-            if (configuration.SupportedProtocols is not null && configuration.SupportedProtocols.Count > 0)
+            if (frameworkOptions.SupportedProtocols is not null && frameworkOptions.SupportedProtocols.Count > 0)
             {
-                options.SupportedProtocols = configuration.SupportedProtocols;
+                frameworkOptions.SupportedProtocols = hubOptions.SupportedProtocols;
             }
         });
+
 
         return services;
     }

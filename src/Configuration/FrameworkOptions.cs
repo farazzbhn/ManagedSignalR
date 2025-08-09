@@ -7,33 +7,52 @@ using System.Data;
 namespace ManagedLib.ManagedSignalR.Configuration;
 
 /// <summary>
-/// Central configuration for SignalR hubs and their message mappings
+/// Central configuration for managed SignalR hubs 
 /// </summary>
-public class ManagedSignalRConfiguration
+public class FrameworkOptions
 {
-    private List<EndpointConfiguration> EndpointConfigurations { get; }
-    public bool? EnableDetailedErrors { get; set; } = null;
-    public int? KeepAliveInterval { get; set; } = null;
-    public IList<string>? SupportedProtocols { get; set; } = null;
-    public DeploymentMode? DeploymentMode { get; private set; } = null;
+
+    /// <summary>
+    /// Singleton configuration object
+    /// </summary>
+    internal static FrameworkOptions Instance { get; set; }
+
+ 
+    private IServiceCollection? Services { get; set; }
+    private List<EndpointOptions> Endpoints { get; set; }
 
 
-    private readonly IServiceCollection _services;
+    /// <summary>
+    /// Finalizes the instance and rids the object of unnecessary references
+    /// </summary>
+    internal void Seal()
+    {
+        Services = null;
+        Endpoints!.ForEach(e => e.Seal());
+    }
 
-    public ManagedSignalRConfiguration
+
+
+    public FrameworkOptions
     (
         IServiceCollection services
     )
     {
-        EndpointConfigurations = new List<EndpointConfiguration>();
-        _services = services;
+        Endpoints = new List<EndpointOptions>();
+        Services = services;
     }
 
+
+    #region SignalR
+
+    public bool? EnableDetailedErrors { get; set; } = null;
+    public int? KeepAliveInterval { get; set; } = null;
+    public IList<string>? SupportedProtocols { get; set; } = null;
 
     /// <summary>
     /// Enables detailed errors in SignalR.
     /// </summary>
-    public ManagedSignalRConfiguration WithEnabledDetailedErrors()
+    public FrameworkOptions WithEnabledDetailedErrors()
     {
         EnableDetailedErrors = true;
         return this;
@@ -42,7 +61,7 @@ public class ManagedSignalRConfiguration
     /// <summary>
     /// Disables detailed errors in SignalR.
     /// </summary>
-    public ManagedSignalRConfiguration WithDisabledDetailedErrors()
+    public FrameworkOptions WithDisabledDetailedErrors()
     {
         EnableDetailedErrors = false;
         return this;
@@ -53,8 +72,8 @@ public class ManagedSignalRConfiguration
     /// Sets the SignalR keep-alive interval in seconds.
     /// </summary>
     /// <param name="interval">The interval, in seconds, at which keep-alive packets are sent to clients.</param>
-    /// <returns>The current <see cref="ManagedSignalRConfiguration"/> instance for fluent chaining.</returns>
-    public ManagedSignalRConfiguration WithKeepAliveInterval(int interval)
+    /// <returns>The current <see cref="FrameworkOptions"/> instance for fluent chaining.</returns>
+    public FrameworkOptions WithKeepAliveInterval(int interval)
     {
         KeepAliveInterval = interval;
         return this;
@@ -66,41 +85,35 @@ public class ManagedSignalRConfiguration
     /// </summary>
     /// <param name="protocols">List of supported protocol names (e.g., "json", "messagepack").</param>
     /// <returns>The current configuration instance for fluent chaining.</returns>
-    public ManagedSignalRConfiguration WithSupportedProtocols(params string[] protocols)
+    public FrameworkOptions WithSupportedProtocols(params string[] protocols)
     {
         SupportedProtocols = protocols.ToList();
         return this;
     }
 
 
+    #endregion
 
 
 
 
 
-    // DEPLOYMENT MODE CONFIGURATION
-    public ManagedSignalRConfiguration AsSingleInstance()
-    {
-        DeploymentMode = Configuration.DeploymentMode.SingleInstance;
-        return this;
-    }
-    
 
     /// <summary>
     /// Adds a managed hub 
     /// </summary>
     /// <typeparam name="THub">Hub type to configure</typeparam>
     /// <returns>Configuration builder for the hub</returns>
-    public EndpointConfiguration AddManagedHub<THub>() where THub : AbstractManagedHub
+    public EndpointOptions AddManagedHub<THub>() where THub : ManagedHub
     {
-        var config = EndpointConfigurations.FirstOrDefault(m => m.HubType == typeof(THub));
+        var config = Endpoints.FirstOrDefault(m => m.HubType == typeof(THub));
         if (config == null)
         {
-            config = new EndpointConfiguration(typeof(THub), this, _services);
-            EndpointConfigurations.Add(config);
+            config = new EndpointOptions(typeof(THub), this, Services);
+            Endpoints.Add(config);
 
             // Register THub with custom factory
-            _services.AddTransient<THub>(sp =>
+            Services.AddTransient<THub>(sp =>
             {
                 // instantiate using the param-less constructor
                 THub hub = ActivatorUtilities.CreateInstance<THub>(sp);
@@ -121,20 +134,18 @@ public class ManagedSignalRConfiguration
     }
 
 
-
-
     /// <summary>
-    /// Finds the <see cref="EndpointConfiguration"/> associated with the SignalR hub of provided type
+    /// Finds &amp; returns the <see cref="Endpoints"/> associated with the <see cref="ManagedHub"/>> hub of provided concrete type
     /// </summary>
-    /// <returns>Hub configuration</returns>
+    /// <returns>The matching <see cref="Endpoints"/> as configured at startup.</returns>
     /// <exception cref="MissingConfigurationException">configuration not found</exception>
     /// <exception cref="InvalidOperationException">invalid input type</exception>
-    internal EndpointConfiguration FetchEndpointConfiguration(Type type)
+    internal EndpointOptions GetEndpointOptions(Type type)
     {
-        if (!typeof(AbstractManagedHub).IsAssignableFrom(type))
+        if (!typeof(ManagedHub).IsAssignableFrom(type))
             throw new InvalidOperationException($"Type {type.FullName} is not a valid ManagedHub type.");
 
-        EndpointConfiguration? config = EndpointConfigurations.SingleOrDefault(x => x.HubType == type);
+        EndpointOptions? config = Endpoints.SingleOrDefault(x => x.HubType == type);
 
         if (config is null)
             throw new MissingConfigurationException($"No configuration found for hub type {type.FullName}. Please ensure it is registered with AddManagedHub<THub>() method.");
@@ -142,10 +153,4 @@ public class ManagedSignalRConfiguration
         return config;
     }
 
-}
-
-public enum DeploymentMode
-{
-    SingleInstance,
-    Distributed
 }

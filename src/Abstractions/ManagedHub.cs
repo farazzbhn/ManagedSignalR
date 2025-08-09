@@ -1,18 +1,21 @@
-﻿using ManagedLib.ManagedSignalR.Configuration;
-using ManagedLib.ManagedSignalR.Core;
-using ManagedLib.ManagedSignalR.Implementations;
+﻿using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
-public abstract class AbstractManagedHub : Hub<IManagedHubClient>
+public abstract class ManagedHub : Hub<IManagedHubClient>
 {
+
+
+    // Properties set internally during instantiation
+
     public IConnectionManager Connections { get; internal set; }
     public IManagedHubHelper Helper { get; internal set; }
     internal IHubCommandDispatcher Dispatcher { get; set; }
 
-    public AbstractManagedHub() {}
+    internal new IHubCallerClients<IManagedHubClient> Clients => base.Clients;
+
 
     /// <summary>
     /// Handles new client connections.
@@ -23,7 +26,7 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
     public sealed override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();
-
+    
         await Connections.TrackAsync(Context);
   
         // Invoke the connection hook for custom logic
@@ -41,9 +44,10 @@ public abstract class AbstractManagedHub : Hub<IManagedHubClient>
         await base.OnDisconnectedAsync(exception);
 
         await Connections.UntrackAsync(Context);
-
+        
         // Invoke the disconnection hook for custom disconnection logic
         await OnDisconnectedHookAsync();
+
     }
 
     /// <summary>

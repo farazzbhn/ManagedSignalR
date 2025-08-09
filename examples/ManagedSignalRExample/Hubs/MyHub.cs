@@ -6,7 +6,7 @@ using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
 
 namespace ManagedSignalRExample.Hubs;
-public class MyHub : AbstractManagedHub
+public class MyHub : ManagedHub
 {
     protected override async Task OnConnectedHookAsync()
     {
@@ -18,17 +18,17 @@ public class MyHub : AbstractManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
+
+        Clients.Client(Context.ConnectionId).TryInvokeClient<MyHub>(alert);
+
         // retrieve the list of connectionIds associated with the current user
-        string[] connectionIds = await Connections.ListConnectionIdsAsync(Context.UserIdentifier);
-
-        // send the alert to every other connection of the user
-
-
+        string[] connectionIds = Connections.UserConnections(Context.UserIdentifier);
 
         foreach (var id in connectionIds)
         {
-            await Helper.SendToConnectionIdAsync(alert, id);
+            await Helper.SendToConnectionAsync(alert, id);
         }
+
     }
 
 

@@ -25,7 +25,6 @@ public sealed class InvokeClientConfiguration<TModel> : InvokeClientConfiguratio
         return this;
     }
 
-
     /// <summary>
     /// <b>Optional</b> —
     /// Overrides the default <see cref="System.Text.Json.JsonSerializer"/> 

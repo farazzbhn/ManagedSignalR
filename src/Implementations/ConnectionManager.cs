@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Implementations;
 
-internal class ConnectionManager<THub> : IConnectionManager<THub> where THub : AbstractManagedHub
+internal class ConnectionManager<THub> : IConnectionManager<THub> where THub : ManagedHub
 {
 
     private readonly ConcurrentDictionary<string, ConnectionSet> _sets = new();
@@ -68,18 +68,18 @@ internal class ConnectionManager<THub> : IConnectionManager<THub> where THub : A
         }
     }
 
-    public Task<string[]> ListConnectionIdsAsync(string? userIdentifier)
+    public string[] UserConnections(string? userIdentifier)
     {
         string key = userIdentifier ?? string.Empty;
 
         if (_sets.TryGetValue(key, out ConnectionSet? set) && set is not null)
         {
             // Return a copy of the connection IDs to avoid exposing internal state
-            return Task.FromResult(set.ConnectionIds.ToArray());
+            return set.ConnectionIds.ToArray();
         }
 
         // No connections found for the given userIdentifier
-        return Task.FromResult(Array.Empty<string>());
+        return Array.Empty<string>();
     }
 }
 
