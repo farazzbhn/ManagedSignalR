@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace ManagedSignalRExample.Handlers;
 public class CoordinatesHandler : IHubCommandHandler<Coordinates>
 {
-    private readonly IHubContext<MyHub> _context;
+    private readonly IHubContext<MyHub> _hubContext;
 
     public async Task Handle(Coordinates request, HubCallerContext context)
     {
@@ -22,7 +22,7 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
             $"\tCoordinates: {latitude}, {longitude}" +
             $"\n\n"
         );
-        
+
         await Task.CompletedTask; // Placeholder for real async work
     }
 }

@@ -4,10 +4,17 @@ using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedSignalRExample.Hubs;
 public class MyHub : ManagedHub
 {
+    private readonly IHubContext<MyHub, IManagedHubClient> _context;
+
+    public MyHub(IHubContext<MyHub, IManagedHubClient> context)
+    {
+        _context = context;    }
+
     protected override async Task OnConnectedHookAsync()
     {
 
@@ -18,15 +25,7 @@ public class MyHub : ManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
-        Clients.Client(Context.ConnectionId).TryInvokeClient<MyHub>(alert);
-
-        // retrieve the list of connectionIds associated with the current user
-        string[] connectionIds = Connections.UserConnections(Context.UserIdentifier);
-
-        foreach (var id in connectionIds)
-        {
-            await Helper.SendToConnectionAsync(alert, id);
-        }
+        await Clients.All.InvokeClientAsync(alert);
 
     }
 

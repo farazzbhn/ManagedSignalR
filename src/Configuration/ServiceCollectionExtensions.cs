@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Implementations;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
@@ -29,20 +30,13 @@ public static class ServiceCollectionExtensions
 
         // Invoke the finalize method to seal and rid the object of unnecessary references
         frameworkOptions.Seal();
-
-        // proceed to set the 'static' singleton instance 
         FrameworkOptions.Instance = frameworkOptions;
-        
 
 
+        services.AddSingleton<FrameworkOptions>();
 
         services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
-        services.AddSingleton(typeof(IConnectionManager<>), typeof(ConnectionManager<>));
-        services.AddScoped(typeof(IManagedHubHelper<>), typeof(SingleInstanceAbstractManagedHubHelper<>));
-        
 
-
-        /* SignalR Configuration Options */
 
         services.AddSignalR(hubOptions =>
         {
@@ -62,6 +56,9 @@ public static class ServiceCollectionExtensions
             }
         });
 
+
+        // Decorate the original IHubContext 
+        services.Decorate(typeof(IHubContext<,>), typeof(ManagedHubContext<>));
 
         return services;
     }

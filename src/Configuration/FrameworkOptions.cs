@@ -12,12 +12,8 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 public class FrameworkOptions
 {
 
-    /// <summary>
-    /// Singleton configuration object
-    /// </summary>
-    internal static FrameworkOptions Instance { get; set; }
+    internal static FrameworkOptions Instance { get;  set; }
 
- 
     private IServiceCollection? Services { get; set; }
     private List<EndpointOptions> Endpoints { get; set; }
 
@@ -30,7 +26,6 @@ public class FrameworkOptions
         Services = null;
         Endpoints!.ForEach(e => e.Seal());
     }
-
 
 
     public FrameworkOptions
@@ -119,12 +114,8 @@ public class FrameworkOptions
                 THub hub = ActivatorUtilities.CreateInstance<THub>(sp);
 
                 // proceed to resolve & set internal dependencies on the hub instance
-                IConnectionManager connections = (IConnectionManager)sp.GetRequiredService(typeof(IConnectionManager<>).MakeGenericType(typeof(THub)));
-                IManagedHubHelper helper = (IManagedHubHelper) sp.GetRequiredService(typeof(IManagedHubHelper<>).MakeGenericType(typeof(THub)));
                 IHubCommandDispatcher dispatcher = sp.GetRequiredService<IHubCommandDispatcher>();
 
-                hub.Connections = connections;
-                hub.Helper = helper;
                 hub.Dispatcher = dispatcher;
 
                 return hub;

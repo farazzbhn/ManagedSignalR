@@ -6,15 +6,7 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
-
-
-    // Properties set internally during instantiation
-
-    public IConnectionManager Connections { get; internal set; }
-    public IManagedHubHelper Helper { get; internal set; }
     internal IHubCommandDispatcher Dispatcher { get; set; }
-
-    internal new IHubCallerClients<IManagedHubClient> Clients => base.Clients;
 
 
     /// <summary>
@@ -27,8 +19,6 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     {
         await base.OnConnectedAsync();
     
-        await Connections.TrackAsync(Context);
-  
         // Invoke the connection hook for custom logic
         await OnConnectedHookAsync();
     }
@@ -43,11 +33,8 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     {
         await base.OnDisconnectedAsync(exception);
 
-        await Connections.UntrackAsync(Context);
-        
         // Invoke the disconnection hook for custom disconnection logic
         await OnDisconnectedHookAsync();
-
     }
 
     /// <summary>
