@@ -11,7 +11,7 @@ public static class IManagedHubClientExtensions
     public static async Task InvokeClientAsync(this IManagedHubClient client, dynamic message)
     {
 
-        Type hubType = ((dynamic)client).HubType;
+        Type hubType = client.HubType;
 
         EndpointOptions endpoint = FrameworkOptions.Instance.GetEndpointOptions(hubType);
 

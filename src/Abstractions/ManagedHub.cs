@@ -21,6 +21,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     
         // Invoke the connection hook for custom logic
         await OnConnectedHookAsync();
+
     }
 
     /// <summary>

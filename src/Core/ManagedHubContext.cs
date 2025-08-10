@@ -1,70 +1,108 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System.Reflection;
+using ManagedLib.ManagedSignalR.Abstractions;
 
 namespace ManagedLib.ManagedSignalR.Core;
 
-public class ManagedHubContext<THub> : IHubContext<THub> where THub : Hub
+// Works only if THub : ManagedHub<IManagedHubClient>
+public class ManagedHubContext<THub> : IHubContext<THub, IManagedHubClient> where THub : ManagedHub
 {
-    private readonly IHubContext<THub> _wrapped;
+    private readonly IHubContext<THub, IManagedHubClient> _inner;
 
-    public ManagedHubContext(IHubContext<THub> inner) => _wrapped = inner;
-
-    public IHubClients Clients => new HubClientsDecorator(typeof(THub), _wrapped.Clients);
-
-    public IGroupManager Groups => _wrapped.Groups;
-}
-
-internal class HubClientsDecorator : IHubClients
-{
-    private readonly Type _hubType;
-    private readonly IHubClients _wrapped;
-
-
-    public HubClientsDecorator(Type hubType, IHubClients inner)
+    public ManagedHubContext(IHubContext<THub, IManagedHubClient> inner)
     {
-        _hubType = hubType;
-        _wrapped = inner;
+        _inner = inner;
     }
 
-    public IClientProxy All => new ClientProxyDecorator(_hubType, _wrapped.All);
+    public IHubClients<IManagedHubClient> Clients
+        => new HubClientsDecorator(typeof(THub), _inner.Clients);
 
-    public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => 
-        new ClientProxyDecorator(_hubType, _wrapped.AllExcept(excludedConnectionIds));
+    public IGroupManager Groups => _inner.Groups;
+}
 
-    public IClientProxy Client(string connectionId) =>
-        new ClientProxyDecorator(_hubType, _wrapped.Client(connectionId));
+internal class HubClientsDecorator : IHubClients<IManagedHubClient>
+{
+    private readonly Type _hubType;
+    private readonly IHubClients<IManagedHubClient> _inner;
 
-    public IClientProxy Clients(IReadOnlyList<string> connectionIds) =>
-        new ClientProxyDecorator(_hubType, _wrapped.Clients(connectionIds));
+    public HubClientsDecorator(Type hubType, IHubClients<IManagedHubClient> inner)
+    {
+        _hubType = hubType;
+        _inner = inner;
+    }
 
-    public IClientProxy Group(string groupName) =>
-        new ClientProxyDecorator(_hubType, _wrapped.Group(groupName));
 
-    public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) =>
-        new ClientProxyDecorator(_hubType, _wrapped.GroupExcept(groupName, excludedConnectionIds));
+    public IManagedHubClient AllExcept(IReadOnlyList<string> excludedConnectionIds)
+    {
+        throw new NotImplementedException();
+    }
 
-    public IClientProxy Groups(IReadOnlyList<string> groupNames) =>
-        new ClientProxyDecorator(_hubType, _wrapped.Groups(groupNames));
+    public IManagedHubClient Client(string connectionId)
+    {
+        throw new NotImplementedException();
+    }
 
-    public IClientProxy User(string userId) =>
-        new ClientProxyDecorator(_hubType, _wrapped.User(userId));
+    public IManagedHubClient Clients(IReadOnlyList<string> connectionIds)
+    {
+        throw new NotImplementedException();
+    }
 
-    public IClientProxy Users(IReadOnlyList<string> userIds) =>
-        new ClientProxyDecorator(_hubType, _wrapped.Users(userIds));
+    public IManagedHubClient Group(string groupName)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IManagedHubClient Groups(IReadOnlyList<string> groupNames)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IManagedHubClient GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IManagedHubClient User(string userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IManagedHubClient Users(IReadOnlyList<string> userIds)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IManagedHubClient All { get; }
 }
 
 public class ClientProxyDecorator : IClientProxy
 {
     internal Type HubType;
-    private readonly IClientProxy _wrapped;
-
+    private readonly IClientProxy _inner;
 
     public ClientProxyDecorator(Type hubType, IClientProxy inner)
     {
         HubType = hubType;
-        _wrapped = inner;
+        _inner = inner;
     }
 
-    public Task SendCoreAsync(string method, object?[] args, CancellationToken cancellationToken = new CancellationToken())
-        => _wrapped.SendCoreAsync(method, args, cancellationToken);
+    public Task SendCoreAsync(string method, object?[] args, CancellationToken cancellationToken = default)
+    {
+        // Pre-send hook
+        Console.WriteLine($"[{HubType.Name}] Sending {method} with {args.Length} args");
+        return _inner.SendCoreAsync(method, args, cancellationToken);
+    }
+
+    public Task InvokeClient(string topic, string payload)
+    {
+        // Optional: intercept InvokeClient
+        return _inner.SendCoreAsync(topic, new object?[] { payload }, default);
+    }
+
+    public Task InvokeClientAsync<THub>(dynamic message) where THub : ManagedHub
+    {
+        Console.WriteLine("------------------------------Custom proxy---------------");
+
+        // Optional: intercept typed calls
+        return Task.CompletedTask;
+    }
 }
