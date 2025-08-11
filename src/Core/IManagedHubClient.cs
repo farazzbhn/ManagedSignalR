@@ -16,8 +16,6 @@ namespace ManagedLib.ManagedSignalR.Core;
 public interface IManagedHubClient
 {
 
-    public Type HubType { get; set; }
-
     /// <summary>
     /// <b>🚫 INTERNAL USE ONLY. 🚫</b> <br/>
     /// <b>Do NOT call this method directly.</b> <br/> 

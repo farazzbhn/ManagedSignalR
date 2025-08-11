@@ -25,7 +25,7 @@ public class MyHub : ManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
-        await Clients.All.InvokeClientAsync(alert);
+        await ManagedClients.All.InvokeClientAsync(alert);
 
     }
 

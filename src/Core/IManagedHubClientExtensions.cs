@@ -2,16 +2,18 @@
 using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Configuration;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedLib.ManagedSignalR.Core;
 
 
 public static class IManagedHubClientExtensions
 {
-    public static async Task InvokeClientAsync(this IManagedHubClient client, dynamic message)
+    public static async Task InvokeClientAsync(this IManagedHubClientProxy clientProxy, dynamic message)
     {
 
-        Type hubType = client.HubType;
+        Type hubType = clientProxy.HubType;
+
 
         EndpointOptions endpoint = FrameworkOptions.Instance.GetEndpointOptions(hubType);
 
@@ -20,5 +22,7 @@ public static class IManagedHubClientExtensions
 
         string topic = route.Topic!;
         string payload = route.Serialize(message);
+
+        await clientProxy.InvokeClient(topic, payload);
     }
 }

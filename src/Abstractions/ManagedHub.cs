@@ -1,6 +1,7 @@
 ﻿using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
+using static ManagedLib.ManagedSignalR.Core.ManagedHubClientProxy;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
@@ -8,6 +9,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
 {
     internal IHubCommandDispatcher Dispatcher { get; set; }
 
+    public HubContextProxy ManagedClients => new HubContextProxy(this, this.GetType());
 
     /// <summary>
     /// Handles new client connections.

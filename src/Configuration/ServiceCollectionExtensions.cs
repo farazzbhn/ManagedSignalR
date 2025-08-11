@@ -32,9 +32,6 @@ public static class ServiceCollectionExtensions
         frameworkOptions.Seal();
         FrameworkOptions.Instance = frameworkOptions;
 
-
-        services.AddSingleton<FrameworkOptions>();
-
         services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
 
 
@@ -57,8 +54,6 @@ public static class ServiceCollectionExtensions
         });
 
 
-        // Decorate the original IHubContext 
-        services.Decorate(typeof(IHubContext<,>), typeof(ManagedHubContext<>));
 
         return services;
     }
