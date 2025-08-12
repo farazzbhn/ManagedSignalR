@@ -11,50 +11,61 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 builder.Services.AddManagedSignalR(config =>
-    {
+{
+    // --- First Hub ---
+    config.AddManagedHub<ApplicationHub>()
 
-        config.AddManagedHub<MyHub>()
-            // Messages of type Alert are routed to client-side method InvokeClient("alert", "{...}") with topic:alert
-            // and serialized using the below serializer ( or default System.Text.Json if not available ) 
-            .ConfigureInvokeClient<Alert>(cfg =>
-                cfg
-                    .RouteToTopic("alert")
-                    // Or do not call UseSerializer to use the default (System.Text.Json) serializer 
-                    .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
+        // Route Alert messages to client method with topic "alert", using custom serializer (or default JSON if omitted)
+        .ConfigureInvokeClient<Alert>(cfg =>
+            cfg
+                .RouteToTopic("alert")
+                .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
 
-            // Messages received over method InvokeServer(topic:"loc", message:"100,200") are deserialized into 
-            // "Coordinates" using the custom deserializer and handled via a scoped instance of "CoordinatesHandler"
-            .ConfigureInvokeServer<Coordinates>(cfg =>
-                cfg
-                    .OnTopic("loc")
-                    // coordinates are expected as "lat,long" string : 100,200
-                    .UseDeserializer(str =>
+        // Handle Coordinates messages from client topic "loc" using custom deserializer and CoordinatesHandler
+        .ConfigureInvokeServer<Coordinates>(cfg =>
+            cfg
+                .OnTopic("loc")
+                // coordinates are sent as "lat,long" string, so we need to parse it
+                .UseDeserializer(str =>
+                {
+                    var split = str.Split(',');
+                    return new Coordinates
                     {
-                        string[] split = str.Split(',');
-                        return new Coordinates
-                        {
-                            Latitude = double.Parse(split[0]),
-                            Longitude = double.Parse(split[1])
-                        };
-                    })
-                    .UseHandler<CoordinatesHandler>())
-
-            // use the default  default (System.Text.Json) serializer 
-            .ConfigureInvokeClient<Message>(cfg => 
-                cfg
-                    .UseSerializer(str => @"sda")
-            );
-
-        // signalR configuration
-        config
-            .WithKeepAliveInterval(30)
-            .WithEnabledDetailedErrors()
-            .WithSupportedProtocols("json");
-    }
-);
+                        Latitude = double.Parse(split[0]),
+                        Longitude = double.Parse(split[1])
+                    };
+                })
+                // Use CoordinatesHandler to process the coordinates
+                .UseHandler<CoordinatesHandler>())
 
 
+        // Route Message objects with default System.Text.Json serializer (here hardcoded for demo)
+        .ConfigureInvokeClient<Message>(cfg =>
+            cfg
+                .UseSerializer(str => "sda"));
+
+
+    // --- Second Hub ---
+    config.AddManagedHub<ChatHub>()
+        // Route ChatMessage to client with topic "chat-msg" using custom serializer
+        .ConfigureInvokeClient<ChatMessage>(cfg =>
+            cfg
+                .RouteToTopic("chat-msg")
+                .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
+
+        // Handle TypingStatus messages from topic "typing" using custom deserializer and TypingStatusHandler
+        .ConfigureInvokeServer<TypingStatus>(cfg =>
+            cfg
+                .OnTopic("typing")
+                .UseDeserializer(str => new TypingStatus { IsTyping = bool.Parse(str) })
+                .UseHandler<TypingStatusHandler>());
+});
+
+
+
+builder.Services.AddSignalR(); // ✅ Required for SignalR Hubs
 
 
 var app = builder.Build();
@@ -73,7 +84,7 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    endpoints.MapHub<MyHub>("/myhub");          // ✅ Maps the API controllers
+    endpoints.MapHub<ApplicationHub>("/myhub");          // ✅ Maps the API controllers
 });
 
 app.Run();

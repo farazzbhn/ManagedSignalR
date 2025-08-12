@@ -39,61 +39,6 @@ public class FrameworkOptions
     }
 
 
-    #region SignalR
-
-    public bool? EnableDetailedErrors { get; set; } = null;
-    public int? KeepAliveInterval { get; set; } = null;
-    public IList<string>? SupportedProtocols { get; set; } = null;
-
-    /// <summary>
-    /// Enables detailed errors in SignalR.
-    /// </summary>
-    public FrameworkOptions WithEnabledDetailedErrors()
-    {
-        EnableDetailedErrors = true;
-        return this;
-    }
-
-    /// <summary>
-    /// Disables detailed errors in SignalR.
-    /// </summary>
-    public FrameworkOptions WithDisabledDetailedErrors()
-    {
-        EnableDetailedErrors = false;
-        return this;
-    }
-
-
-    /// <summary>
-    /// Sets the SignalR keep-alive interval in seconds.
-    /// </summary>
-    /// <param name="interval">The interval, in seconds, at which keep-alive packets are sent to clients.</param>
-    /// <returns>The current <see cref="FrameworkOptions"/> instance for fluent chaining.</returns>
-    public FrameworkOptions WithKeepAliveInterval(int interval)
-    {
-        KeepAliveInterval = interval;
-        return this;
-    }
-
-
-    /// <summary>
-    /// Sets the supported SignalR protocols.
-    /// </summary>
-    /// <param name="protocols">List of supported protocol names (e.g., "json", "messagepack").</param>
-    /// <returns>The current configuration instance for fluent chaining.</returns>
-    public FrameworkOptions WithSupportedProtocols(params string[] protocols)
-    {
-        SupportedProtocols = protocols.ToList();
-        return this;
-    }
-
-
-    #endregion
-
-
-
-
-
     /// <summary>
     /// Adds a managed hub 
     /// </summary>
@@ -120,14 +65,6 @@ public class FrameworkOptions
 
                 return hub;
             });
-
-
-            //Services.AddSingleton<IHubContext<THub, IManagedHubClient>>(sp =>
-            //{
-            //    var inner = sp.GetRequiredService<IHubContext<THub, IManagedHubClient>>();
-            //    return new ManagedHubContext<THub>(inner);
-            //});
-
         }
         return config;
     }

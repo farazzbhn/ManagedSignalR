@@ -9,6 +9,14 @@ namespace ManagedLib.ManagedSignalR.Core;
 
 public static class ManagedHubClientProxyExtensions
 {
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="clientProxy"></param>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    /// <exception cref="MissingConfigurationException"></exception>
     public static async Task InvokeClientAsync(this IManagedHubClientProxy clientProxy, dynamic message)
     {
 

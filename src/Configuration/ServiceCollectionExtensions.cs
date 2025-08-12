@@ -13,7 +13,7 @@ namespace ManagedLib.ManagedSignalR.Configuration;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds and configures SignalR services with managed connection handling
+    /// Adds and configures Managed SignalR hubs to the service collection.
     /// </summary>
     /// <param name="services">Service collection to configure</param>
     /// <param name="configurer">Configuration builder</param>
@@ -33,32 +33,11 @@ public static class ServiceCollectionExtensions
         // register the options as a static singleton so that extension methods can access the option without DI
         FrameworkOptions.Instance = frameworkOptions;
 
-
         //When a class asks for IManagedHubContext<SomeManagedHub>, provide an instance of ManagedHubContext<SomeManagedHub>
         services.AddSingleton(typeof(IManagedHubContext<>), typeof(ManagedHubContext<>));
 
         // and the command dispatcher which is set & not injected into managedHubs
         services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
-
-
-        services.AddSignalR(hubOptions =>
-        {
-            if (frameworkOptions.EnableDetailedErrors.HasValue)
-            {
-                hubOptions.EnableDetailedErrors = frameworkOptions.EnableDetailedErrors.Value;
-            }
-
-            if (frameworkOptions.KeepAliveInterval.HasValue)
-            {
-                hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(frameworkOptions.KeepAliveInterval.Value);
-            }
-
-            if (frameworkOptions.SupportedProtocols is not null && frameworkOptions.SupportedProtocols.Count > 0)
-            {
-                frameworkOptions.SupportedProtocols = hubOptions.SupportedProtocols;
-            }
-        });
-
         return services;
     }
 }

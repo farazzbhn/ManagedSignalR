@@ -7,14 +7,8 @@ using ManagedSignalRExample.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedSignalRExample.Hubs;
-public class MyHub : ManagedHub
+public class ApplicationHub : ManagedHub
 {
-    private readonly IHubContext<MyHub, IManagedHubClient> _context;
-
-    public MyHub(IHubContext<MyHub, IManagedHubClient> context)
-    {
-        _context = context;    }
-
     protected override async Task OnConnectedHookAsync()
     {
 
@@ -26,8 +20,6 @@ public class MyHub : ManagedHub
         };
 
         await Clients.All.InvokeClientAsync(alert);
-
     }
-
 
 }

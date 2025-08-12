@@ -1,6 +1,3 @@
 @ManagedSignalRExample_HostAddress = http://localhost:5083
 
-GET {{ManagedSignalRExample_HostAddress}}/weatherforecast/
-Accept: application/json
-
 ###
