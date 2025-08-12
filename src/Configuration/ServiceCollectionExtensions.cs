@@ -30,8 +30,14 @@ public static class ServiceCollectionExtensions
 
         // Invoke the finalize method to seal and rid the object of unnecessary references
         frameworkOptions.Seal();
+        // register the options as a static singleton so that extension methods can access the option without DI
         FrameworkOptions.Instance = frameworkOptions;
 
+
+        //When a class asks for IManagedHubContext<SomeManagedHub>, provide an instance of ManagedHubContext<SomeManagedHub>
+        services.AddSingleton(typeof(IManagedHubContext<>), typeof(ManagedHubContext<>));
+
+        // and the command dispatcher which is set & not injected into managedHubs
         services.AddScoped<IHubCommandDispatcher, HubCommandDispatcher>();
 
 
@@ -52,8 +58,6 @@ public static class ServiceCollectionExtensions
                 frameworkOptions.SupportedProtocols = hubOptions.SupportedProtocols;
             }
         });
-
-
 
         return services;
     }

@@ -1,15 +1,18 @@
 ﻿using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
-using static ManagedLib.ManagedSignalR.Core.ManagedHubClientProxy;
 
 namespace ManagedLib.ManagedSignalR.Abstractions;
 
 public abstract class ManagedHub : Hub<IManagedHubClient>
 {
+    /// <summary>
+    /// Set automatically during instantiation by the DI factory method. <br />
+    /// No need to inject or expose this dependency to derived classes.
+    /// </summary>
     internal IHubCommandDispatcher Dispatcher { get; set; }
 
-    public HubContextProxy ManagedClients => new HubContextProxy(this, this.GetType());
+    public HubCallerClientProxy Clients => new HubCallerClientProxy(base.Clients, this.GetType());
 
     /// <summary>
     /// Handles new client connections.
@@ -51,6 +54,7 @@ public abstract class ManagedHub : Hub<IManagedHubClient>
     /// Access the <see cref="Hub.Context"/> property to get connection details like <see cref="HubCallerContext.UserIdentifier"/> and <see cref="HubCallerContext.ConnectionId"/>.
     /// </summary>
     protected virtual Task OnDisconnectedHookAsync() => Task.CompletedTask;
+
 
     /// <summary>
     /// Invoked by the client to process a message routed by topic.

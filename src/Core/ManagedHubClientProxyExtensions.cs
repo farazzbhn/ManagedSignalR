@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace ManagedLib.ManagedSignalR.Core;
 
 
-public static class IManagedHubClientExtensions
+public static class ManagedHubClientProxyExtensions
 {
     public static async Task InvokeClientAsync(this IManagedHubClientProxy clientProxy, dynamic message)
     {

@@ -1,4 +1,5 @@
 ﻿using ManagedLib.ManagedSignalR.Abstractions;
+using ManagedLib.ManagedSignalR.Core;
 using ManagedLib.ManagedSignalR.Types.Exceptions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,7 +94,6 @@ public class FrameworkOptions
 
 
 
-
     /// <summary>
     /// Adds a managed hub 
     /// </summary>
@@ -112,7 +112,7 @@ public class FrameworkOptions
             {
                 // instantiate using the param-less constructor
                 THub hub = ActivatorUtilities.CreateInstance<THub>(sp);
-
+                
                 // proceed to resolve & set internal dependencies on the hub instance
                 IHubCommandDispatcher dispatcher = sp.GetRequiredService<IHubCommandDispatcher>();
 
@@ -120,6 +120,14 @@ public class FrameworkOptions
 
                 return hub;
             });
+
+
+            //Services.AddSingleton<IHubContext<THub, IManagedHubClient>>(sp =>
+            //{
+            //    var inner = sp.GetRequiredService<IHubContext<THub, IManagedHubClient>>();
+            //    return new ManagedHubContext<THub>(inner);
+            //});
+
         }
         return config;
     }

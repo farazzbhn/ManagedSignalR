@@ -5,10 +5,11 @@ namespace ManagedLib.ManagedSignalR.Abstractions;
 /// <summary>
 /// Dispatches commands to their appropriate handlers
 /// </summary>
-public interface IHubCommandDispatcher
+internal interface IHubCommandDispatcher
 {
     /// <summary>
-    /// Deserializes the payload into a command using the , and delegates it to appropriate handler based on the topic
+    /// Deserializes the payload into a command using the configuration for the managed hub( topic to type using deserializer),
+    /// and delegates it to appropriate handler based on the topic
     /// </summary>
     /// <param name="hubType">The type of the hub that received the message</param>
     /// <param name="topic">The message topic used for routing</param>
