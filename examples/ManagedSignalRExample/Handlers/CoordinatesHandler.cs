@@ -8,7 +8,6 @@ namespace ManagedSignalRExample.Handlers;
 public class CoordinatesHandler : IHubCommandHandler<Coordinates>
 {
     private readonly IManagedHubContext<ApplicationHub> _hubContext;
-
     public CoordinatesHandler(IManagedHubContext<ApplicationHub> hubContext)
     {
         _hubContext = hubContext;
@@ -29,8 +28,7 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
             $"\n\n"
         );
 
-
-        await _hubContext.ManagedClients.Client(connectionId).InvokeClientAsync(new Message() { Text = $"your location is {latitude} , {longitude}" });
+        await _hubContext.Clients.Client(connectionId).InvokeClientAsync(new Message() { Text = $"your location is {latitude} , {longitude}" });
 
         await Task.CompletedTask; 
     }

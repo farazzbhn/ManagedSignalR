@@ -5,7 +5,7 @@ namespace ManagedLib.ManagedSignalR.Core;
 
 
 /// <summary>
-/// Proxy class that wraps <see cref="IHubCallerClients"/> available within a <see cref="ManagedHub"/>
+/// Proxy class that wraps <see cref="HubClientsProxy"/> available within a <see cref="IManagedHubContext{THub}"/>
 /// </summary>
 public class HubClientsProxy 
 {

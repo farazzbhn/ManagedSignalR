@@ -16,5 +16,6 @@ public class ManagedHubContext<THub> : IManagedHubContext<THub> where THub : Man
         _hubContext = hubContext;
     }
 
-    public HubClientsProxy ManagedClients => new HubClientsProxy(_hubContext.Clients, typeof(THub));
+    public HubClientsProxy Clients => new HubClientsProxy(_hubContext.Clients, typeof(THub));
+    public IGroupManager Groups => _hubContext.Groups;
 }
