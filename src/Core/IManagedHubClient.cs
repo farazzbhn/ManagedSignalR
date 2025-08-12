@@ -19,7 +19,7 @@ public interface IManagedHubClient
     /// <summary>
     /// <b>🚫 INTERNAL USE ONLY. 🚫</b> <br/>
     /// <b>Do NOT call this method directly.</b> <br/> 
-    /// Instead, use <see cref="ManagedHubClientProxyExtensions.InvokeClientAsync{THub}"/>.
+    /// Instead, use <see cref="ManagedHubClientProxyExtensions.TryInvokeClientAsync"/>.
     /// </summary>
     /// <param name="topic">Message routing topic.</param>
     /// <param name="payload">Serialized message data.</param>

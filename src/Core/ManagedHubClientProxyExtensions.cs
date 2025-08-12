@@ -17,7 +17,7 @@ public static class ManagedHubClientProxyExtensions
     /// <param name="message"></param>
     /// <returns></returns>
     /// <exception cref="MissingConfigurationException"></exception>
-    public static async Task InvokeClientAsync(this IManagedHubClientProxy clientProxy, dynamic message)
+    public static async Task<bool> TryInvokeClientAsync(this IManagedHubClientProxy clientProxy, dynamic message)
     {
 
         Type hubType = clientProxy.HubType;
@@ -31,6 +31,13 @@ public static class ManagedHubClientProxyExtensions
         string topic = route.Topic!;
         string payload = route.Serialize(message);
 
-        await clientProxy.InvokeClient(topic, payload);
-    }
+        try
+        {
+            await clientProxy.InvokeClient(topic, payload);
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }e 
 }

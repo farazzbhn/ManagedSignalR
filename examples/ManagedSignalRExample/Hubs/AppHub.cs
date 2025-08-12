@@ -7,7 +7,7 @@ using ManagedSignalRExample.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedSignalRExample.Hubs;
-public class ApplicationHub : ManagedHub
+public class AppHub : ManagedHub
 {
     protected override async Task OnConnectedHookAsync()
     {
@@ -19,7 +19,7 @@ public class ApplicationHub : ManagedHub
             ActionUrl = "https://yourapp.com/security/device"
         };
 
-        await Clients.All.InvokeClientAsync(alert);
+        await Clients.Client(Context.ConnectionId).TryInvokeClientAsync(alert);
     }
 
 }

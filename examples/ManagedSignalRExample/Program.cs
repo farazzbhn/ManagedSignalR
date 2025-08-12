@@ -15,7 +15,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddManagedSignalR(config =>
 {
     // --- First Hub ---
-    config.AddManagedHub<ApplicationHub>()
+    config.AddManagedHub<AppHub>()
 
         // Route Alert messages to client method with topic "alert", using custom serializer (or default JSON if omitted)
         .ConfigureInvokeClient<Alert>(cfg =>
@@ -41,26 +41,11 @@ builder.Services.AddManagedSignalR(config =>
                 .UseHandler<CoordinatesHandler>())
 
 
-        // Route Message objects with default System.Text.Json serializer (here hardcoded for demo)
+        // Route Message objects with default System.Text.Json serializer 
         .ConfigureInvokeClient<Message>(cfg =>
             cfg
-                .UseSerializer(str => "sda"));
-
-
-    // --- Second Hub ---
-    config.AddManagedHub<ChatHub>()
-        // Route ChatMessage to client with topic "chat-msg" using custom serializer
-        .ConfigureInvokeClient<ChatMessage>(cfg =>
-            cfg
-                .RouteToTopic("chat-msg")
-                .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
-
-        // Handle TypingStatus messages from topic "typing" using custom deserializer and TypingStatusHandler
-        .ConfigureInvokeServer<TypingStatus>(cfg =>
-            cfg
-                .OnTopic("typing")
-                .UseDeserializer(str => new TypingStatus { IsTyping = bool.Parse(str) })
-                .UseHandler<TypingStatusHandler>());
+                .RouteToTopic("message"));
+ 
 });
 
 
@@ -84,7 +69,7 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    endpoints.MapHub<ApplicationHub>("/myhub");          // ✅ Maps the API controllers
+    endpoints.MapHub<AppHub>("/apphub");          // ✅ Maps the API controllers
 });
 
 app.Run();

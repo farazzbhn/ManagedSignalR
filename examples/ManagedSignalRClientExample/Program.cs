@@ -5,7 +5,7 @@ Console.WriteLine("Hello, World!");
 
 // Build the connection
 var connection = new HubConnectionBuilder()
-    .WithUrl("http://localhost:5005/myhub")
+    .WithUrl("http://localhost:5005/apphub")
     .WithAutomaticReconnect()
     .Build();
 
@@ -20,13 +20,13 @@ connection.On<string, string>("InvokeClient", (topic, payload) =>
             break;
 
 
-        case "msg":
+        case "message":
             var msg = System.Text.Json.JsonSerializer.Deserialize<Message>(payload);
             Console.WriteLine($"[message] Message: {msg?.Text}");
             break;
 
         default:
-            Console.WriteLine($"[unknown topic] {topic} => {payload}");
+            Console.WriteLine($"[unexpected topic] {topic} => {payload}");
             break;
     }
 });
