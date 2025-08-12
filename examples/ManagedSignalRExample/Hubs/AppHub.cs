@@ -22,4 +22,19 @@ public class AppHub : ManagedHub
         await Clients.Client(Context.ConnectionId).TryInvokeClientAsync(alert);
     }
 
+
+
+    protected override async Task OnDisconnectedHookAsync()
+    {
+
+        var alert = new Alert()
+        {
+            Content = "User disconnected.",
+            ActionLabel = "Revoke Access",
+            ActionUrl = "https://yourapp.com/security/device"
+        };
+
+        await Clients.Others.TryInvokeClientAsync(alert);
+    }
+
 }
