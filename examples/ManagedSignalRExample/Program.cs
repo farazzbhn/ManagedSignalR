@@ -41,7 +41,10 @@ builder.Services.AddManagedSignalR(config =>
                     .UseHandler<CoordinatesHandler>())
 
             // use the default  default (System.Text.Json) serializer 
-            .ConfigureInvokeClient<Message>(cfg => cfg.RouteToTopic("msg"));
+            .ConfigureInvokeClient<Message>(cfg => 
+                cfg
+                    .UseSerializer(str => @"sda")
+            );
 
         // signalR configuration
         config

@@ -45,7 +45,7 @@ public sealed class InvokeClientConfiguration<TModel> : InvokeClientConfiguratio
         if (string.IsNullOrWhiteSpace(Topic))
             throw new MisconfiguredException(
                 $"Topic is not configured for outgoing message of type '{typeof(TModel).Name}'.\n" +
-                $"Use .BindTopic(\"your-topic\") to route the message type ({typeof(TModel).Name}) to a specific topic.");
+                $"Use .RouteToTopic(\"your-topic\") to route the message type ({typeof(TModel).Name}) to a specific topic.");
 
     }
 }

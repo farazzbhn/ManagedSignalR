@@ -54,7 +54,7 @@ public sealed class InvokeServerConfiguration<TModel> : InvokeServerConfiguratio
         if (string.IsNullOrWhiteSpace(Topic))
             throw new MisconfiguredException(
                 $"Topic is not configured for message type '{typeof(TModel).Name}'.\n" +
-                $"Use .FromTopic(\"your-topic\") to bind the message type ({typeof(TModel).Name}) to a specific topic.");
+                $"Use .OnTopic(\"your-topic\") to bind the message type ({typeof(TModel).Name}) to a specific topic.");
 
         if (HandlerType == null)
             throw new MisconfiguredException(

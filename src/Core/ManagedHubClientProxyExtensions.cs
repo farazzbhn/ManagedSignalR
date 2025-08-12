@@ -18,7 +18,7 @@ public static class ManagedHubClientProxyExtensions
         EndpointOptions endpoint = FrameworkOptions.Instance.GetEndpointOptions(hubType);
 
         if (!endpoint.InvokeClientConfigurations.TryGetValue((Type)message.GetType(), out var route))
-            throw new MissingConfigurationException($"No configuration found for message type {message.GetType()}.");
+            throw new MissingConfigurationException($"No configuration found for outgoing message type {message.GetType()} within hub {nameof(hubType)}.");
 
         string topic = route.Topic!;
         string payload = route.Serialize(message);
