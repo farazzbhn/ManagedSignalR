@@ -9,5 +9,5 @@ namespace ManagedLib.ManagedSignalR.Core;
 
 public interface IManagedHubContext<THub> where THub : ManagedHub
 {
-    HubClientsProxy Clients { get; }
+    HubClientsProxy ManagedClients { get; }
 }

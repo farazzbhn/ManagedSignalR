@@ -30,7 +30,7 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
         );
 
 
-        await _hubContext.Clients.All.InvokeClientAsync(new Message()
+        await _hubContext.ManagedClients.All.InvokeClientAsync(new Message()
             { Text = $"your location is {latitude} , {longitude}" });
 
 
