@@ -6,17 +6,14 @@ A powerful .NET library that provides a structured, topic-based approach to Sign
 
 ## 🔄 Communication Flow
 
-ManagedSignalR simplifies SignalR communication through two main methods:
+ManagedSignalR supports two message flows :
 
-- **Client-to-Server**: Clients call `InvokeServer(topic, message)` to send messages to the server. These messages are deserialized into the configured C# types (using any custom deserializer you’ve set up) and then processed by the registered handlers.
-
-- **Server-to-Client**: The server pushes messages by routing them to the appropriate topic and payload. `TryInvokeClientAsync(obj message)` is the public API that prepares the parameters and delegates to the internal logic, giving you a simple, strongly-typed way to send messages without manual routing.
-
-Instead of defining multiple hub methods, you configure topic-based routing where messages are automatically serialized/deserialized and routed to appropriate handlers based on the topic. The server-side uses `TryInvokeClientAsync`, which automatically resolves the topic and serialization based on your configuration.
-
-![Architecture Diagram](invokeClient.png)
+- **`InvokeServer(topic, payload)`** *(implemented in the server-side library)* – Client-to-Server communication, where the client sends a message to the server with a specified topic and serialized payload.
+![Client-To-Server Flow](invokeServer.png)
 
 
+- **`InvokeClient(topic, payload)`** *(implemented on the client)* – Server-to-Client communication. **Do not call this directly**; instead, use **`TryInvokeClientAsync(message)`** to ensure correct routing and serialization.
+![Server-to-Client Flow](invokeClient.png)
 
 ---
 
@@ -27,7 +24,7 @@ Instead of defining multiple hub methods, you configure topic-based routing wher
 - ⚡ **Flexible Serialization**: Support for custom serializers and deserializers per message type  
 - 🔒 **Type-Safe Client Communication**: Strongly typed messaging with automatic topic resolution  
 - 🔄 **Connection Lifecycle Hooks**: Override-friendly connection and disconnection event handling  
-- 🌐 **Managed Hub Context**: Access hub functionality from outside the hub using `IManagedHubContext<THub>` instead of `IHubContext<THub>`  
+- 🌐 **Managed Hub Context**: Access hub functionality from outside the hub using `IManagedHubContext<THub>` instead of `IHubContext<THub, IManagedHubClient>`  
 - 🚀 **Fire-and-Forget Processing**: Asynchronous command processing with built-in error handling  
 
 ---
@@ -121,7 +118,6 @@ public class AppHub : ManagedHub
         var connectionId = Context.ConnectionId;
 
         // Remove from all possible groups
-        await Groups.RemoveFromGroupAsync(connectionId, "OnlineUsers");
         await Groups.RemoveFromGroupAsync(connectionId, "EarlyUsers");
         await Groups.RemoveFromGroupAsync(connectionId, "LateUsers");
     }
