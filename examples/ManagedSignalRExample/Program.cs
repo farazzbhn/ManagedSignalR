@@ -41,7 +41,7 @@ builder.Services.AddManagedSignalR(config =>
 
 
         .ConfigureInvokeClient<Message>(cfg =>
-            // Configure outgoing messages (server to client) for "message" topic
+            // Configure outgoing messages (server to client) for "msg" topic
             // do not specify a serializer, it will use the default JSON serializer
             cfg.RouteToTopic("msg"));
 
