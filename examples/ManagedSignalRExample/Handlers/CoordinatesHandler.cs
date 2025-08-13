@@ -14,23 +14,17 @@ public class CoordinatesHandler : IHubCommandHandler<Coordinates>
         _hubContext = hubContext;
     }
 
-
     public async Task Handle(Coordinates request, HubCallerContext context)
     {
-        var connectionId = context.ConnectionId;
-        var latitude = request.Latitude;
-        var longitude = request.Longitude;
 
-        Console.WriteLine(
-            $"{nameof(CoordinatesHandler)}\n" +
-            $"\tUser : {context.UserIdentifier ?? string.Empty}\n" +
-            $"\tConnection ID: {connectionId}\n" +
-            $"\tCoordinates: {latitude}, {longitude}" +
-            $"\n\n"
-        );
+        Console.WriteLine($"User {context.UserIdentifier} is at {request.Latitude}, {request.Longitude}");
+        
+        var message = new Message
+        {
+            Text = $"Location received successfully! ({request.Latitude},{request.Longitude})"
+        };
 
-        await _hubContext.Clients.Client(connectionId).TryInvokeClientAsync(new Message() { Text = $"your location is {latitude} , {longitude}" });
-
-        await Task.CompletedTask; 
+        // use IManagedHubContext<> to invoke client
+        await _hubContext.Clients.Client(context.ConnectionId).TryInvokeClientAsync(message);
     }
 }

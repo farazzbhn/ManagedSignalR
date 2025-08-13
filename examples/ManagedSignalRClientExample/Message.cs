@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ManagedSignalRClientExample;
-public class Message
+public record Message
 {
     public string Text { get; set; }
 }

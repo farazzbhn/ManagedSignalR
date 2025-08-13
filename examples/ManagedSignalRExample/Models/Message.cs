@@ -1,6 +1,5 @@
 ﻿namespace ManagedSignalRExample.Models;
-
-public class Message
+public record Message
 {
     public string Text { get; set; }
 }

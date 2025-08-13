@@ -1,4 +1,5 @@
-﻿using ManagedLib.ManagedSignalR.Configuration;
+﻿using System.Text.Json;
+using ManagedLib.ManagedSignalR.Configuration;
 using ManagedSignalRExample.Handlers;
 using ManagedSignalRExample.Hubs;
 using ManagedSignalRExample.Models;
@@ -14,39 +15,42 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddManagedSignalR(config =>
 {
-    // --- First Hub ---
+    /* FIRST HUB */
     config.AddManagedHub<AppHub>()
 
-        // Route Alert messages to client method with topic "alert", using custom serializer (or default JSON if omitted)
+        // Configure outgoing messages (server to client)
         .ConfigureInvokeClient<Alert>(cfg =>
-            cfg
-                .RouteToTopic("alert")
-                .UseSerializer(obj => System.Text.Json.JsonSerializer.Serialize(obj)))
+            cfg.RouteToTopic("alert")
+                .UseSerializer(obj => JsonSerializer.Serialize(obj)))
 
-        // Handle Coordinates messages from client topic "loc" using custom deserializer and CoordinatesHandler
+
+        // Configure incoming messages (client to server)  
         .ConfigureInvokeServer<Coordinates>(cfg =>
-            cfg
-                .OnTopic("loc")
-                // coordinates are sent as "lat,long" string, so we need to parse it
+            cfg.OnTopic("gps")
+                // coordinates are received as "lat,long"
                 .UseDeserializer(str =>
                 {
-                    var split = str.Split(',');
+                    var parts = str.Split(',');
                     return new Coordinates
                     {
-                        Latitude = double.Parse(split[0]),
-                        Longitude = double.Parse(split[1])
+                        Latitude = double.Parse(parts[0]), // assuming the 1st part is latitude
+                        Longitude = double.Parse(parts[1]) // assuming the 2nd part is longitude
                     };
                 })
-                // Use CoordinatesHandler to process the coordinates
                 .UseHandler<CoordinatesHandler>())
 
 
-        // Route Message objects with default System.Text.Json serializer 
         .ConfigureInvokeClient<Message>(cfg =>
-            cfg
-                .RouteToTopic("message"));
- 
+            // Configure outgoing messages (server to client) for "message" topic
+            // do not specify a serializer, it will use the default JSON serializer
+            cfg.RouteToTopic("msg"));
+
+
+    /* SECOND HUB */
+    //config.AddManagedHub<ChatHub>()...
+
 });
+
 
 
 

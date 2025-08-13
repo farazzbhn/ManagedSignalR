@@ -9,6 +9,7 @@ var connection = new HubConnectionBuilder()
     .WithAutomaticReconnect()
     .Build();
 
+
 // Handle server-initiated messages via InvokeClient(topic, payload)
 connection.On<string, string>("InvokeClient", (topic, payload) =>
 {
@@ -16,20 +17,28 @@ connection.On<string, string>("InvokeClient", (topic, payload) =>
     {
         case "alert":
             var alert = System.Text.Json.JsonSerializer.Deserialize<Alert>(payload);
-            Console.WriteLine($"[alert] Message: {alert?.Content}");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"ALERT!!!\t{alert?.Content}");
+            Console.ResetColor();
             break;
 
-
-        case "message":
+        case "msg":
             var msg = System.Text.Json.JsonSerializer.Deserialize<Message>(payload);
-            Console.WriteLine($"[message] Message: {msg?.Text}");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"NEW MESSAGE*\t{msg?.Text}");
+            Console.ResetColor();
             break;
 
         default:
-            Console.WriteLine($"[unexpected topic] {topic} => {payload}");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[unexpected topic]\t{topic} => {payload}");
+            Console.ResetColor();
             break;
     }
 });
+
+
+
 
 // Wait for user confirmation before connecting
 Console.WriteLine("Press ENTER to connect to the hub...");
@@ -46,16 +55,21 @@ catch (Exception ex)
     return;
 }
 
+
+
 // Main interaction loop
 while (true)
 {
+    Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine("Enter coordinates as lat,long (or 'exit'):");
+    Console.ResetColor();
+
     var input = Console.ReadLine();
     if (input == "exit") break;
 
     try
     {
-        await connection.SendAsync("InvokeServer", "loc", input); // Topic-based send
+        await connection.SendAsync("InvokeServer", "gps", input); // Topic-based send
     }
     catch (Exception ex)
     {

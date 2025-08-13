@@ -1,38 +1,29 @@
-﻿using ManagedLib.ManagedSignalR;
-using ManagedLib.ManagedSignalR.Abstractions;
-using ManagedLib.ManagedSignalR.Configuration;
+﻿using ManagedLib.ManagedSignalR.Abstractions;
 using ManagedLib.ManagedSignalR.Core;
-using ManagedLib.ManagedSignalR.Implementations;
 using ManagedSignalRExample.Models;
-using Microsoft.AspNetCore.SignalR;
 
 namespace ManagedSignalRExample.Hubs;
+
 public class AppHub : ManagedHub
 {
     protected override async Task OnConnectedHookAsync()
     {
-
-        var alert = new Alert()
+        var alert = new Alert
         {
-            Content = "A new device has connected to your account. If this wasn't you, please take immediate action.",
-            ActionLabel = "Revoke Access",
-            ActionUrl = "https://yourapp.com/security/device"
+            Content = $"Welcome to the app! Connected as {Context.ConnectionId}",
+            ActionLabel = "Get Started",
         };
 
-        await Clients.Client(Context.ConnectionId).TryInvokeClientAsync(alert);
+        await Clients.Caller.TryInvokeClientAsync(alert);
     }
-
-
 
     protected override async Task OnDisconnectedHookAsync()
     {
-
-        var alert = new Alert()
+        var alert = new Alert
         {
-            Content = "User disconnected.",
+            Content = "User left the app"
         };
 
         await Clients.Others.TryInvokeClientAsync(alert);
     }
-
 }
