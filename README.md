@@ -14,6 +14,10 @@ ManagedSignalR simplifies SignalR communication through two main methods:
 
 Instead of defining multiple hub methods, you configure topic-based routing where messages are automatically serialized/deserialized and routed to appropriate handlers based on the topic. The server-side uses `TryInvokeClientAsync`, which automatically resolves the topic and serialization based on your configuration.
 
+![Architecture Diagram](invokeClient.png)
+
+
+
 ---
 
 ## ✨ Features
