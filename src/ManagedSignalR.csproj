@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ManagedLib.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+
+
+      <!-- Package metadata -->
+      <PackageId>ManagedSignalR</PackageId>
+      <Version>1.0.0</Version>
+      <Authors>Faraz Zabihian</Authors>
+      <Company>N/A</Company>
+      <Title>ManagedSignalR</Title>
+      <Description>
+          A powerful .NET library for structured, topic-based SignalR hub management with automatic command routing,
+          custom serialization, type-safe client messaging, and clean separation of concerns. Includes lifecycle hooks,
+          async error handling, and managed hub context for accessing hubs from anywhere.
+      </Description>
+      <PackageLicenseExpression>MIT</PackageLicenseExpression>
+      <PackageReadmeFile>README.md</PackageReadmeFile>
+      <RepositoryUrl>https://github.com/farazzbhn/ManagedSignalR</RepositoryUrl>
+      <PackageProjectUrl>https://github.com/farazzbhn/ManagedSignalR</PackageProjectUrl>
+      <RepositoryType>git</RepositoryType>
+      <PackageTags>
+          SignalR,SignalRHub,ManagedHub,SignalRLibrary,SignalRManagement,TopicRouting,CommandHandler,
+          HubContext,TypeSafeMessaging,CustomSerialization,DotNet,DotNet8,ASPNetCore,RealTime,RealTimeMessaging,
+          Websocket,Socket,ClientToServer,ServerToClient,StronglyTypedHub,StrongTypedHub,ManagedSignalR
+      </PackageTags>
+
+      <!-- GitHub Packages configuration -->
+      <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+      <PackageOutputPath>nupkgs</PackageOutputPath>
+      <PublishRepositoryUrl>true</PublishRepositoryUrl>
+      <IncludeSymbols>true</IncludeSymbols>
+      <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+      <NeutralLanguage>en</NeutralLanguage>
+      <PublishToGitHubPackages>true</PublishToGitHubPackages>
+    </PropertyGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+	</ItemGroup>
+
+    <!-- Include README.md in NuGet package -->
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+</Project>
+

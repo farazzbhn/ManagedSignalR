@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36109.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2442C6B7-3FB8-4384-8E18-48C4EA69ECB3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{3952D531-F700-4EB7-AB5A-110D59948ADA}"
+	ProjectSection(SolutionItems) = preProject
+		examples\README.md = examples\README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManagedSignalR", "src\ManagedSignalR.csproj", "{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManagedSignalRExample", "examples\ManagedSignalRExample\ManagedSignalRExample.csproj", "{77D7AB3A-9A62-4623-9478-40966C382AF4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedSignalRClientExample", "examples\ManagedSignalRClientExample\ManagedSignalRClientExample.csproj", "{8A0F1F4A-BF7A-3681-8742-049183E672C0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\Downloads\invokeClient.png = ..\..\Downloads\invokeClient.png
+		..\..\Downloads\invokeServer.png = ..\..\Downloads\invokeServer.png
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77D7AB3A-9A62-4623-9478-40966C382AF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77D7AB3A-9A62-4623-9478-40966C382AF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77D7AB3A-9A62-4623-9478-40966C382AF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77D7AB3A-9A62-4623-9478-40966C382AF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A0F1F4A-BF7A-3681-8742-049183E672C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A0F1F4A-BF7A-3681-8742-049183E672C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A0F1F4A-BF7A-3681-8742-049183E672C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A0F1F4A-BF7A-3681-8742-049183E672C0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5BFC8F03-7FB3-4977-834B-CE386E6BFF5D} = {2442C6B7-3FB8-4384-8E18-48C4EA69ECB3}
+		{77D7AB3A-9A62-4623-9478-40966C382AF4} = {3952D531-F700-4EB7-AB5A-110D59948ADA}
+		{8A0F1F4A-BF7A-3681-8742-049183E672C0} = {3952D531-F700-4EB7-AB5A-110D59948ADA}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E930CD75-F42F-4800-A03D-E22FB4A81223}
+	EndGlobalSection
+EndGlobal
